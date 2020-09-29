@@ -3,11 +3,11 @@ const path = require("path")
 const cookieParser = require("cookie-parser")
 const logger = require("morgan")
 require("dotenv").config()
-const indexRouter = require("./routes/index")
+// const indexRouter = require("./routes/index")
 const apiRouter = require("./routes/api/index")
 const apiResponse = require("./helpers/apiResponse")
 const cors = require("cors")
-const eventScanner = require("./services/eventScanner")
+// const eventScanner = require("./services/eventScanner")
 // DB connection
 const MONGODB_URL = process.env.MONGODB_URL;
 const mongoose = require("mongoose")
@@ -40,9 +40,9 @@ app.use(express.static(path.join(__dirname, "public")))
 app.use(cors("*"))
 
 // Start scanning POC events
-eventScanner(app)
+// eventScanner(app)
 //Route Prefixes
-app.use("/", indexRouter)
+// app.use("/", indexRouter)
 app.use("/api/", apiRouter)
 
 // throw 404 if URL not found
