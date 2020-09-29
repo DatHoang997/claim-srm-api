@@ -1,0 +1,11 @@
+{
+    "apps": [
+        {
+            "name": "pocapi",
+            "script": "yarn",
+            "args" : "start",
+            "log_date_format" : "YYYY-MM-DD HH:mm Z",
+            "interpreter" : "node@14.2.0"
+        }
+    ]
+}
