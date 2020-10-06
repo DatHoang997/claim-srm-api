@@ -8,9 +8,13 @@
     "lint": "eslint --fix --config .eslintrc.json \"**/*.js\""
   },
   "dependencies": {
+    "@solana/web3.js": "^0.78.2",
     "aws-sdk": "^2.683.0",
     "axios": "^0.19.2",
     "bcrypt": "^3.0.6",
+    "bip32": "^2.0.6",
+    "bip39": "^3.0.2",
+    "buffer-layout": "^1.2.0",
     "codacy-coverage": "^3.4.0",
     "cookie-parser": "~1.4.3",
     "cors": "^2.8.5",
@@ -28,6 +32,7 @@
     "nodemailer": "^6.4.6",
     "redis": "^3.0.2",
     "tronweb": "^3.0.0",
+    "tweetnacl": "^1.0.3",
     "unique-filename": "^1.1.1",
     "web3": "^1.2.7"
   },

@@ -2,126 +2,116 @@ const User = require("../models/UserModel")
 const { body, validationResult } = require("express-validator")
 const apiResponse  = require("../helpers/apiResponse")
 const auth = require("../middlewares/jwt")
-var mongoose = require("mongoose")
-var {merchant_status} = require("../helpers/constants")
+const mongoose = require("mongoose")
 const global = require("../helpers/global")
+const { Account, Connection, PublicKey, SystemProgram, Transaction } = require('@solana/web3.js')
+const slnUtils = require("../helpers/slnUtils")
+const Utils = require("../helpers/utils")
+const {web3ws, web3eth} = require("../helpers/web3")
+const firebase    = require('../helpers/firebase')
 
 mongoose.set("useFindAndModify", false)
 
-/**
- * List Book.
- *
- * @returns {Object}
- */
-exports.registerMerchant = [
-  auth,
-  async function (req, res) {
-    const user = await User.findById(req.user._id)
-    if (user.merchantStatus === merchant_status.IS_NOT_MERCHANT) {
-      user.merchantStatus = merchant_status.REQUESTING
-      user.save()
-      return apiResponse.successResponseWithData(res, "Register merchant Success", user)
-    } else {
-      apiResponse.ErrorResponse(res, "This user have not registered become to merchant")
-    }
-  }
-];
-
-exports.checkUserName = [
-  async function (req, res) {
-    return await global.citizen_contract.methods.citizen(req.params.username.toLowerCase()).call()
-      .then(function(result){
-        if (result.wallet_address != "0x0000000000000000000000000000000000000000") {
-          apiResponse.successResponse(res, "success")
-        } else {
-          apiResponse.ErrorResponse(res, "User does not exist")
-        }
-      })
-  }
-];
-
-exports.checkAdmin = [
-  auth,
-  async function (req, res) {
-    const user = await User.findById(req.user._id)
-    if (user.role === 'administrator') {
-      return apiResponse.successResponseWithData(res, "is Admin", true)
-    }else {
-      return apiResponse.successResponseWithData(res, "is not Admin", false)
-    }
-  }
-];
-
-exports.checkMerchantManager = [
-  auth,
-  async function (req, res) {
-    const user = await User.findById(req.user._id)
-    if (user.role === "merchant_manager") {
-      return apiResponse.successResponseWithData(res, "is merchant manager", true)
-    }else {
-      return apiResponse.successResponseWithData(res, "is not merchant manager", false)
-    }
-  }
-];
-
-exports.getEmail = [
-  auth,
-  async function (req, res) {
-    const user = await User.findById(req.user._id)
-    if (user) {
-      return apiResponse.successResponseWithData(res, "Email", user.email)
-    }else {
-      apiResponse.ErrorResponse(res, "user does not exist")
-    }
-  }
-];
-
-exports.getMaxAllocation = [
-  auth,
-  async function (req, res) {
-    const user = await User.findById(req.user._id)
-    if (user) {
-      return apiResponse.successResponseWithData(res, "max allocation", user.exchange_limit)
-    }else {
-      apiResponse.ErrorResponse(res, "user does not exist")
-    }
-  }
-];
-
-exports.changeEmail = [
-  auth,
-  body("email").isLength({ min: 1 }).trim().withMessage("Email must be specified.")
-		.isEmail().withMessage("Email must be a valid email address.").custom((value) => {
-			return User.findOne({email : value.toLowerCase()}).then((user) => {
-				if (user) {
-					return Promise.reject("E-mail already in use")
-				}
-			})
-		}),
+exports.claimZSRM = [
+  body("data", "data can not be empty.").notEmpty().trim(),
+  body("signature", "signature can not be empty.").notEmpty().trim(),
   async function (req, res) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return apiResponse.validationErrorWithData(res, "Email must be a valid email address.", errors.array())
+      return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array())
     }
-    const user = await User.findById(req.user._id)
-    if (user) {
-      user.email = req.body.email
-      user.save()
-      return apiResponse.successResponseWithData(res, "Email", user.email)
-    }else {
-      apiResponse.ErrorResponse(res, "user does not exist")
+    console.log(req.body)
+    let fbId = req.body.data.slice(0, req.body.data.indexOf('.'))
+    let zsrmAddress = req.body.data.slice(req.body.data.indexOf('.') + 1, req.body.data.lastIndexOf('.'))
+    console.log(zsrmAddress)
+    const wallet = await web3ws.eth.accounts.wallet.add(process.env.POC_PRIVATE_KEY);
+    const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
+    if (parseFloat(pocBalance) - process.env.SRM_REWARD < 500000000000000000000) {
+      // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "Pool's Warning!", "POC pool's balance is below 500")
+      // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "Pool's Warning!", "POC Pool's balance is below 500")
+      console.log('check balance')
+    }
+    if (parseFloat(pocBalance) > process.env.SRM_REWARD) {
+      try {
+        global.token_contract.methods.transfer(zsrmAddress, process.env.SRM_REWARD)
+        .send({from: wallet.address, gasPrice: '0'}
+        ).then(async function (data) {
+          const lastCheck = async () => {
+            console.log('DONE')
+            const check = await web3ws.eth.getTransaction(data.transactionHash)
+            if (check.blockHash){
+              clearInterval(checkFunction)
+              let newUser = new User({
+                wallet_address: zsrmAddress,
+                // fb_id: fbId,
+              })
+              newUser.save()
+              return apiResponse.successResponse(res, "transfer success")
+            }
+          }
+          let checkFunction = setInterval(lastCheck, 10000);
+        })
+      } catch(ex) {
+        throw new Error('Cannot confirm', ex)
+      }
+    } else {
+      throw new Error('not enough POC')
+      // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "POC pool's balance is running out")
+      // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "POC Pool's balance is running out")
     }
   }
 ];
 
-exports.getLimit = [
-  auth,
+// r8YtgnjtH3rh4Wj2VYGWawXBNgapSohvgMJETGwNYDR  receive
+exports.swapSRM = [
+  body("data", "data can not be empty.").notEmpty().trim(),
+  body("signature", "signature can not be empty.").notEmpty().trim(),
   async function (req, res) {
-    const user = await User.findById(req.user._id)
-    if (user) {
-      return apiResponse.successResponseWithData(res, "Limit", user.exchange_limit)
-    }else {
-      apiResponse.ErrorResponse(res, "user does not exist")
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array())
     }
+    const connection = new Connection('http://testnet.solana.com', 'recent');
+
+    let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.MNEMONIC)
+    const recentBlockhash = await connection.getRecentBlockhash('recent')
+    let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
+    .add(
+      slnUtils.transfer({
+        owner: account.publicKey, // from SOL address
+        source: new PublicKey('3F4EXyNCLxxk5auyS1aN8rcMX6MGvTqdmEraN2CHtjec'), // from SRM address
+        destination: new PublicKey('6VTiGtHw67jJxnftBMbmnE5g8jsGJhYfXm55csfWmS5W'), // to SRM address
+        amount: 10 //ok
+      }),
+    )
+
+    console.log(transaction)
+    return connection.sendTransaction(transaction, [account]).then(transfer=>{
+      console.log(transfer)
+      return apiResponse.successResponseWithData(res, "transfer success", transfer)
+    }).catch(error=>{
+      console.log("error",error)
+      throw new Error(error)
+    })
   }
 ];
+
+exports.download = [
+  async function (req, res) {
+    console.log('AAAAAAAAAA', req.params)
+    let user = await User.findOne({fb_id: req.params.fb_id})
+    // if (user) {
+    //   return apiResponse.successResponse(res, "User is already claimed")
+    // } else {
+      let refLink = await firebase.createRefLink(req.params.fb_id)
+      // let data = new User({
+      //   // wallet_address: zsrmAddress,
+      //   fb_id: req.params.fb_id,
+      // })
+      // data.save()
+      console.log(refLink)
+      res.redirect(refLink);
+      // return apiResponse.successResponseWithData(res, "Success", refLink)
+    // }
+  }
+]

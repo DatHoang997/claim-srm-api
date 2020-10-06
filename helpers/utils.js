@@ -1,5 +1,9 @@
-const {web3ws} = require("./web3")
+const { web3ws } = require("./web3")
 const global = require("./global")
+const bip32 = require("bip32")
+const bip39 = require("bip39")
+const {Account} = require("@solana/web3.js")
+const nacl = require("tweetnacl")
 
 exports.randomNumber = function (length) {
 	var text = "";
@@ -16,20 +20,20 @@ exports.sleep = async function (time) {
 
 exports.getRefBy = async function (username) {
 	return global.citizen_contract.methods.citizen(username.toLowerCase()).call()
-	.then(function(result){
-		return (result.ref_by == "" || result.ref_by == "foundation") ? false : result.ref_by
-	})
+		.then(function (result) {
+			return (result.ref_by == "" || result.ref_by == "foundation") ? false : result.ref_by
+		})
 }
 
-exports.weiToPOC =  function (wei) {
+exports.weiToPOC = function (wei) {
 	return decShift(wei, -18);
 }
 
-exports.weiToUSDT =  function (wei) {
+exports.weiToUSDT = function (wei) {
 	return decShift(wei, -6);
 }
 
-exports.pocToWei =  function (wei) {
+exports.pocToWei = function (wei) {
 	return decShift(wei, 18);
 }
 
@@ -37,7 +41,7 @@ exports.usdtToWei = function (wei) {
 	return decShift(wei, 6);
 }
 
-function decShift (s, d) {
+function decShift(s, d) {
 	if (!s) {
 		return "";
 	}
@@ -48,21 +52,21 @@ function decShift (s, d) {
 }
 
 function intShift(s, d) {
-  s = s.toString();
-  if (d === 0) {
-    return s;
-  }
-  if (d > 0) {
-    return s + '0'.repeat(d);
-  } else {
-    if (s.length <= d) {
-      return 0;
-    }
-    return s.substring(0, s.length - d);
-  }
+	s = s.toString();
+	if (d === 0) {
+		return s;
+	}
+	if (d > 0) {
+		return s + '0'.repeat(d);
+	} else {
+		if (s.length <= d) {
+			return 0;
+		}
+		return s.substring(0, s.length - d);
+	}
 }
 
-function _decShiftPositive(s, d){
+function _decShiftPositive(s, d) {
 	s = s.toString();
 	if (d == 0) {
 		return s;
@@ -70,13 +74,13 @@ function _decShiftPositive(s, d){
 	let f = '';
 	let p = s.indexOf('.');
 	if (p >= 0) {
-		f = s.substring(p+1); // assume that s.length > p
+		f = s.substring(p + 1); // assume that s.length > p
 		s = s.substring(0, p);
 	}
 	if (d > 0) {
 		if (d < f.length) {
 			s += f.substring(0, d);
-			f = f.substring(d+1);
+			f = f.substring(d + 1);
 			s = s.replace(/^0+/g, ""); // leading zeros
 			if (s.length == 0) {
 				s = '0';
@@ -108,4 +112,23 @@ function _decShiftPositive(s, d){
 		return '0' + '.' + f;
 	}
 	return '0';
+}
+
+exports.getSolanaAccountAtIndex = async function(mnemonic, index = 1, accountIndex = 0) {
+	console.log('getSolanaAccountAtIndex')
+	const seed = await bip39.mnemonicToSeed(mnemonic);
+	const seedBuffer = Buffer.from(seed);
+	const Path = `m/501'/${index}'/0/${accountIndex}`
+	const deriverSeed = bip32.fromSeed(seedBuffer).derivePath(Path).privateKey;
+	const account = new Account(nacl.sign.keyPair.fromSeed(deriverSeed).secretKey);
+	// console.log('account', account)
+	// console.log("privateKey",Buffer.from(account.secretKey.buffer).toString('hex'))
+	// console.log("address",account.publicKey.toBase58())
+	// console.log("publicKey",account.publicKey.toString('hex'))
+	return {
+		privateKey: Buffer.from(account.secretKey.buffer).toString('hex'),
+		address: account.publicKey.toBase58(),
+		publicKey: account.publicKey.toString('hex'),
+		account: account
+	};
 }

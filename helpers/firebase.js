@@ -1,11 +1,11 @@
 let axios = require('axios')
 
-exports.createRefLink = async function (username, subid) {
-  let response = await axios.post(' https://firebasedynamiclinks.googleapis.com/v1/shortLinks?key=' + process.env.FIREBASE_KEY,
+exports.createRefLink = async function (fb_id) {
+  let response = await axios.post('https://firebasedynamiclinks.googleapis.com/v1/shortLinks?key=' + process.env.FIREBASE_KEY,
     {
       "dynamicLinkInfo": {
         "domainUriPrefix": "https://ezdefi.page.link",
-        "link": "https://ezdefi.web.app?referralID=" + username + "&token=poc&app=poc&subid=" + subid,
+        "link": "https://ezdefi.web.app?fb_id=" + fb_id,
         "androidInfo": {
           "androidPackageName": "com.ezdefi",
           "androidMinPackageVersionCode": "105"
@@ -20,6 +20,6 @@ exports.createRefLink = async function (username, subid) {
         "option": "SHORT"
       }
     });
-  console.log(response)
+  // console.log(response)
   return response.data.shortLink
 }

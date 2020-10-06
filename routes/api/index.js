@@ -1,10 +1,10 @@
-let express             = require("express")
-let user                = require("./user")
-const auth              = require("../../middlewares/jwt")
-const adminRole         = require("../../middlewares/admin")
+const express = require("express")
+const auth = require("../../middlewares/jwt")
+const adminRole = require("../../middlewares/admin")
+const user = require("./user")
 
 let app = express()
 
-app.use("/user/", user)
+app.use("/claim-srm/", user)
 
 module.exports = app;
