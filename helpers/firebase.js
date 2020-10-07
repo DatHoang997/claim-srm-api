@@ -1,11 +1,11 @@
 let axios = require('axios')
 
-exports.createRefLink = async function (fb_id) {
+exports.createRefLink = async function (fb_id,ps_id) {
   let response = await axios.post('https://firebasedynamiclinks.googleapis.com/v1/shortLinks?key=' + process.env.FIREBASE_KEY,
     {
       "dynamicLinkInfo": {
         "domainUriPrefix": "https://ezdefi.page.link",
-        "link": "https://ezdefi.web.app?fb_id=" + fb_id,
+        "link": "https://ezdefi.web.app?&fb_id=" + fb_id +"ps_id=" + ps_id,
         "androidInfo": {
           "androidPackageName": "com.ezdefi",
           "androidMinPackageVersionCode": "105"

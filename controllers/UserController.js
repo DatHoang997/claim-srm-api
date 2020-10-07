@@ -8,7 +8,8 @@ const { Account, Connection, PublicKey, SystemProgram, Transaction } = require('
 const slnUtils = require("../helpers/slnUtils")
 const Utils = require("../helpers/utils")
 const {web3ws, web3eth} = require("../helpers/web3")
-const firebase    = require('../helpers/firebase')
+const firebase = require('../helpers/firebase')
+const axios = require("axios")
 
 mongoose.set("useFindAndModify", false)
 
@@ -22,15 +23,22 @@ exports.claimZSRM = [
     }
     console.log(req.body)
     let fbId = req.body.data.slice(0, req.body.data.indexOf('.'))
+    console.log('fb_id', fbId)
     let zsrmAddress = req.body.data.slice(req.body.data.indexOf('.') + 1, req.body.data.lastIndexOf('.'))
+    console.log('zsrm', zsrmAddress)
     console.log(zsrmAddress)
+    let user = await User.findOne({fb_id: fbId})
+    console.log(user)
+    if (user.claimed == '1') {
+      return apiResponse.ErrorResponse(res, "already claimed")
+    }
     const wallet = await web3ws.eth.accounts.wallet.add(process.env.POC_PRIVATE_KEY);
     const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
-    if (parseFloat(pocBalance) - process.env.SRM_REWARD < 500000000000000000000) {
-      // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "Pool's Warning!", "POC pool's balance is below 500")
-      // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "Pool's Warning!", "POC Pool's balance is below 500")
-      console.log('check balance')
-    }
+    // if (parseFloat(pocBalance) - process.env.SRM_REWARD < 500000000000000000000) {
+    //   // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "Pool's Warning!", "POC pool's balance is below 500")
+    //   // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "Pool's Warning!", "POC Pool's balance is below 500")
+    //   console.log('check balance')
+    // }
     if (parseFloat(pocBalance) > process.env.SRM_REWARD) {
       try {
         global.token_contract.methods.transfer(zsrmAddress, process.env.SRM_REWARD)
@@ -41,15 +49,11 @@ exports.claimZSRM = [
             const check = await web3ws.eth.getTransaction(data.transactionHash)
             if (check.blockHash){
               clearInterval(checkFunction)
-              let newUser = new User({
-                wallet_address: zsrmAddress,
-                // fb_id: fbId,
-              })
-              newUser.save()
+              await User.findOneAndUpdate({fb_id: fbId}, {$set:{wallet_address: zsrmAddress, claimed: 1}})
               return apiResponse.successResponse(res, "transfer success")
             }
           }
-          let checkFunction = setInterval(lastCheck, 10000);
+          let checkFunction = setInterval(lastCheck, 2000);
         })
       } catch(ex) {
         throw new Error('Cannot confirm', ex)
@@ -98,20 +102,18 @@ exports.swapSRM = [
 
 exports.download = [
   async function (req, res) {
-    console.log('AAAAAAAAAA', req.params)
+    let refLink = await firebase.createRefLink(req.params.fb_id)
     let user = await User.findOne({fb_id: req.params.fb_id})
-    // if (user) {
-    //   return apiResponse.successResponse(res, "User is already claimed")
-    // } else {
-      let refLink = await firebase.createRefLink(req.params.fb_id)
-      // let data = new User({
-      //   // wallet_address: zsrmAddress,
-      //   fb_id: req.params.fb_id,
-      // })
-      // data.save()
-      console.log(refLink)
-      res.redirect(refLink);
-      // return apiResponse.successResponseWithData(res, "Success", refLink)
+    if (!user) {
+      let data = new User({
+        fb_id: req.params.fb_id,
+        claimed: 0
+      })
+      data.save()
+    }
+    // console.log(refLink)
+    res.redirect(refLink)
+    // return apiResponse.successResponseWithData(res, "Success", refLink)
     // }
   }
 ]
