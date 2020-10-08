@@ -27,6 +27,13 @@ const db = mongoose.connection;
 
 const app = express()
 
+const CronJob = require('cron').CronJob;
+const { checkComment } = require('./services/pancake');
+
+const job = new CronJob('*/5 * * * * *', checkComment);
+
+// job.start();
+
 //don't show the log when it is test
 if(process.env.NODE_ENV !== "test") {
 	app.use(logger("dev"))
