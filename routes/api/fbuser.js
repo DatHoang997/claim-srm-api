@@ -3,6 +3,6 @@ const FbUserController = require('../../controllers/FbUserController');
 
 var router = express.Router();
 
-router.get('/fbusers/:userId', FbUserController.findOne);
+router.get('/:userId', FbUserController.findOne);
 
 module.exports = router;
