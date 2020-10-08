@@ -5,7 +5,7 @@ exports.createRefLink = async function (fb_id,ps_id) {
     {
       "dynamicLinkInfo": {
         "domainUriPrefix": "https://ezdefi.page.link",
-        "link": "https://ezdefi.web.app?&fb_id=" + fb_id +"ps_id=" + ps_id,
+        "link": "https://ezdefi.web.app?fb_id=" + fb_id + "&ps_id=" + ps_id,
         "androidInfo": {
           "androidPackageName": "com.ezdefi",
           "androidMinPackageVersionCode": "105"

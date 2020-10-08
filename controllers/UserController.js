@@ -26,11 +26,15 @@ exports.claimZSRM = [
     console.log('fb_id', fbId)
     let zsrmAddress = req.body.data.slice(req.body.data.indexOf('.') + 1, req.body.data.lastIndexOf('.'))
     console.log('zsrm', zsrmAddress)
-    console.log(zsrmAddress)
     let user = await User.findOne({fb_id: fbId})
     console.log(user)
     if (user.claimed == '1') {
-      return apiResponse.ErrorResponse(res, "already claimed")
+      return apiResponse.successResponse(res, "already claimed")
+    }
+    let check = await User.findOne({wallet_address: zsrmAddress})
+    console.log(check)
+    if (check != null) {
+      return apiResponse.successResponse(res, "already claimed")
     }
     const wallet = await web3ws.eth.accounts.wallet.add(process.env.POC_PRIVATE_KEY);
     const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
@@ -102,7 +106,8 @@ exports.swapSRM = [
 
 exports.download = [
   async function (req, res) {
-    let refLink = await firebase.createRefLink(req.params.fb_id)
+    let refLink = await firebase.createRefLink(req.params.fb_id, req.params.ps_id)
+    console.log(req.params)
     let user = await User.findOne({fb_id: req.params.fb_id})
     if (!user) {
       let data = new User({
@@ -111,7 +116,7 @@ exports.download = [
       })
       data.save()
     }
-    // console.log(refLink)
+    console.log(refLink)
     res.redirect(refLink)
     // return apiResponse.successResponseWithData(res, "Success", refLink)
     // }
