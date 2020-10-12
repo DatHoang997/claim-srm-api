@@ -14,8 +14,8 @@ const axios = require("axios")
 mongoose.set("useFindAndModify", false)
 
 exports.claimZSRM = [
-  body("data", "data can not be empty.").notEmpty().trim(),
-  body("signature", "signature can not be empty.").notEmpty().trim(),
+  body("data", "data can not be empty.").not().isEmpty().trim(),
+  body("signature", "signature can not be empty.").not().isEmpty().trim(),
   async function (req, res) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
@@ -71,13 +71,13 @@ exports.claimZSRM = [
 
 // r8YtgnjtH3rh4Wj2VYGWawXBNgapSohvgMJETGwNYDR  receive
 exports.swapSRM = [
-  // body("data", "data can not be empty.").notEmpty().trim(),
-  // body("signature", "signature can not be empty.").notEmpty().trim(),
+  body("data", "data can not be empty.").not().isEmpty().trim(),
+  body("signature", "signature can not be empty.").not().isEmpty().trim(),
   async function (req, res) {
-    // const errors = validationResult(req)
-    // if (!errors.isEmpty()) {
-    //   return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array())
-    // }
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array())
+    }
     const connection = new Connection('http://testnet.solana.com', 'recent');
 
     let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.MNEMONIC)
