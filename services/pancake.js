@@ -2,15 +2,15 @@ const axios = require('axios');
 const Conversation = require('../models/ConversationModel');
 const FbUser = require('../models/FbUserModel');
 
-const PAGE_ID = 102777081113438;
+const PAGE_ID = 492974120811420;
 
-const POST_ID = 396470298410780;
+const POST_ID = 3311824925592978;
 
 const ACCESS_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJhMjhlOGFiMy0zNmY0LTQ2OTYtYjdmOS1iZTA2NmQ3NTExNGMiLCJpYXQiOjE2MDEzNTE5ODQsImZiX25hbWUiOiJOZ3V5ZW4gUXVhbmcgVGllbiIsImZiX2lkIjoiMTQ3MDg4MDg2OTY5MzIyOSIsImV4cCI6MTYwOTEyNzk4NH0.SipSgCnkydAQ_1awIwG3jWReBD0r2d2-Uq9hdMM3PLk';
 
 const ENDPOINT = `https://pages.fm/api/v1/pages/${PAGE_ID}/`;
 
-const NUMBER_OF_TAGS = 5;
+const NUMBER_OF_TAGS = 1;
 
 const CHATBOT_BACKLINK = 'http://m.me/492974120811420?ref=oueor6b2z.ref.';
 
@@ -40,6 +40,8 @@ exports.checkComment = async function() {
             checkConversation(data.id, data.customer_id);
           }
         });
+      } else {
+        checkConversation(conversation.id, conversation.customers[0].id);
       }
     });
   }
@@ -71,6 +73,10 @@ async function checkConversation(conversationId, customerId) {
   let content = response.data;
   let messages = content.messages;
   let last_message = messages.slice(-1)[0];
+  if(!last_message.can_reply_privately || last_message.private_reply_conversation) {
+    return;
+  }
+  let messageId = last_message.id;
   let message_tags = last_message.message_tags;
   message_tags = message_tags.filter((item, index) => {
     return message_tags.indexOf(item) === index;
@@ -84,9 +90,11 @@ async function checkConversation(conversationId, customerId) {
           if(error) {
             Conversation.deleteOne({id: conversationId, customer_id: customerId})
           } else if (data) {
-            replyComment(conversationId, data._id);
+            replyComment(conversationId, messageId, data._id);
           }
         });
+      } else {
+        replyComment(conversationId, messageId, result._id);
       }
     })
   }
@@ -106,8 +114,8 @@ function getMessages(conversationId, customerID) {
   })
 }
 
-function replyComment(conversationId, userId) {
-  console.log(`Replying conversation: ${conversationId}`);
+function replyComment(conversationId, messageId, userId) {
+  console.log(`Replying message: ${messageId}`);
   try {
     axios({
       method: 'post',
@@ -120,7 +128,7 @@ function replyComment(conversationId, userId) {
         'message': `${CHATBOT_BACKLINK}${userId}`,
         'action': 'private_replies',
         'post_id': `${PAGE_ID}_${POST_ID}`,
-        'message_id': conversationId,
+        'message_id': messageId,
       }
     })
   } catch(error) {
