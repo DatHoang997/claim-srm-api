@@ -28,14 +28,13 @@ exports.claimZSRM = [
     console.log('zsrm', zsrmAddress)
     let user = await User.findOne({fb_id: fbId})
     console.log(user)
-    if (user.claimed == '1') {
-      return apiResponse.successResponse(res, "already claimed")
-    }
-    let check = await User.findOne({wallet_address: zsrmAddress})
-    console.log(check)
-    if (check != null) {
-      return apiResponse.successResponse(res, "already claimed")
-    }
+    // if (user.claimed == '1') { //disable when testing
+    //   return apiResponse.successResponse(res, "already claimed") //disable when testing
+    // } //disable when testing
+    // let check = await User.findOne({wallet_address: zsrmAddress}) //disable when testing
+    // if (check != null) { //disable when testing
+    //   return apiResponse.successResponse(res, "already claimed") //disable when testing
+    // } //disable when testing
     const wallet = await web3ws.eth.accounts.wallet.add(process.env.POC_PRIVATE_KEY);
     const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
     // if (parseFloat(pocBalance) - process.env.SRM_REWARD < 500000000000000000000) {
@@ -120,5 +119,18 @@ exports.download = [
     res.redirect(refLink)
     // return apiResponse.successResponseWithData(res, "Success", refLink)
     // }
+  }
+]
+
+exports.getUser = [
+  async function (req, res) {
+    let user = await User.findOne({fb_id: req.params.fb_id})
+    console.log(user)
+    if (user.claimed == 0) {
+      return apiResponse.successResponseWithData(res, "this FB is not claimed yet", false)
+    } else {
+      return apiResponse.successResponseWithData(res, "this FB is already claimed", true)
+    }
+
   }
 ]
