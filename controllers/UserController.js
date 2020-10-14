@@ -28,13 +28,13 @@ exports.claimZSRM = [
     console.log('zsrm', zsrmAddress)
     let user = await User.findOne({fb_id: fbId})
     console.log(user)
-    // if (user.claimed == '1') { //disable when testing
-    //   return apiResponse.successResponse(res, "already claimed") //disable when testing
-    // } //disable when testing
-    // let check = await User.findOne({wallet_address: zsrmAddress}) //disable when testing
-    // if (check != null) { //disable when testing
-    //   return apiResponse.successResponse(res, "already claimed") //disable when testing
-    // } //disable when testing
+    if (user.claimed == '1') { //disable when testing
+      return apiResponse.successResponse(res, "already claimed") //disable when testing
+    } //disable when testing
+    let check = await User.findOne({wallet_address: zsrmAddress}) //disable when testing
+    if (check != null) { //disable when testing
+      return apiResponse.successResponse(res, "already claimed") //disable when testing
+    } //disable when testing
     const wallet = await web3ws.eth.accounts.wallet.add(process.env.POC_PRIVATE_KEY);
     const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
     // if (parseFloat(pocBalance) - process.env.SRM_REWARD < 500000000000000000000) {

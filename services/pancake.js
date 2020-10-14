@@ -2,17 +2,17 @@ const axios = require('axios');
 const Conversation = require('../models/ConversationModel');
 const FbUser = require('../models/FbUserModel');
 
-const PAGE_ID = 492974120811420;
+const PAGE_ID = 1795330330742938;
 
-const POST_ID = 3311824925592978;
+const POST_ID = 2744359005840061;
 
-const ACCESS_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJhMjhlOGFiMy0zNmY0LTQ2OTYtYjdmOS1iZTA2NmQ3NTExNGMiLCJpYXQiOjE2MDEzNTE5ODQsImZiX25hbWUiOiJOZ3V5ZW4gUXVhbmcgVGllbiIsImZiX2lkIjoiMTQ3MDg4MDg2OTY5MzIyOSIsImV4cCI6MTYwOTEyNzk4NH0.SipSgCnkydAQ_1awIwG3jWReBD0r2d2-Uq9hdMM3PLk';
+const ACCESS_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJhMjhlOGFiMy0zNmY0LTQ2OTYtYjdmOS1iZTA2NmQ3NTExNGMiLCJpYXQiOjE2MDI1NzY3ODYsImZiX25hbWUiOiJOZ3V5ZW4gUXVhbmcgVGllbiIsImZiX2lkIjoiMTQ3MDg4MDg2OTY5MzIyOSIsImV4cCI6MTYxMDM1Mjc4Nn0.mRE-sFlxRVX-_Ljj1-iRLsDzOqsOECwVyCRlYHGlVJE';
 
 const ENDPOINT = `https://pages.fm/api/v1/pages/${PAGE_ID}/`;
 
-const NUMBER_OF_TAGS = 1;
+const NUMBER_OF_TAGS = 5;
 
-const CHATBOT_BACKLINK = 'http://m.me/492974120811420?ref=oueor6b2z.ref.';
+const DOWNLOAD_LINK = 'https://api-bounty.ezdefi.com/download';
 
 exports.checkComment = async function() {
   let response;
@@ -81,23 +81,22 @@ async function checkConversation(conversationId, customerId) {
   message_tags = message_tags.filter((item, index) => {
     return message_tags.indexOf(item) === index;
   });
-  if(message_tags.length >= NUMBER_OF_TAGS) {
-    FbUser.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
-      if(error) return;
-      if(!result) {
-        let user = new FbUser({fb_id: content.customers[0].fb_id});
-        user.save(function(error, data) {
-          if(error) {
-            Conversation.deleteOne({id: conversationId, customer_id: customerId})
-          } else if (data) {
-            replyComment(conversationId, messageId, data._id);
-          }
-        });
-      } else {
-        replyComment(conversationId, messageId, result._id);
-      }
-    })
-  }
+  let isValid = (message_tags.length >= NUMBER_OF_TAGS) ? true : false;
+  FbUser.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
+    if(error) return;
+    if(!result) {
+      let user = new FbUser({fb_id: content.customers[0].fb_id, link_sent: '0'});
+      user.save(function(error, data) {
+        if(error) {
+          Conversation.deleteOne({id: conversationId, customer_id: customerId})
+        } else if (data) {
+          replyComment(conversationId, messageId, data.fb_id, isValid);
+        }
+      });
+    } else if(result.link_sent == '0') {
+      replyComment(conversationId, messageId, result.fb_id, isValid);
+    }
+  })
 }
 
 function getMessages(conversationId, customerID) {
@@ -114,25 +113,37 @@ function getMessages(conversationId, customerID) {
   })
 }
 
-function replyComment(conversationId, messageId, userId) {
+function replyComment(conversationId, messageId, userId, isValid) {
   console.log(`Replying message: ${messageId}`);
-  try {
-    axios({
-      method: 'post',
-      url: `${ENDPOINT}conversations/${conversationId}/messages?access_token=${ACCESS_TOKEN}`,
-      headers: {
-        'conversation_id': conversationId,
-        'page_id': PAGE_ID
-      },
-      data: {
-        'message': `${CHATBOT_BACKLINK}${userId}`,
-        'action': 'private_replies',
-        'post_id': `${PAGE_ID}_${POST_ID}`,
-        'message_id': messageId,
-      }
-    })
-  } catch(error) {
+  let message = '';
+  if(isValid) {
+    message = `Click vào đây để download app và nhận bounty ${DOWNLOAD_LINK}/${userId}/${userId}`;
+  } else {
+    message = 'EzDeFi cảm ơn bạn đã để lại comment. Tuy nhiên comment của bạn chưa hợp lệ (chưa đủ số lượng người tag hoặc bạn đã tag ở một comment trước đó). Xin vui lòng cập nhật lại comment để tiếp tục tham gia chương trình nhận quà tặng giá trị';
+  }
+  axios({
+    method: 'post',
+    url: `${ENDPOINT}conversations/${conversationId}/messages?access_token=${ACCESS_TOKEN}`,
+    headers: {
+      'conversation_id': conversationId,
+      'page_id': PAGE_ID
+    },
+    data: {
+      'message': message,
+      'action': 'private_replies',
+      'post_id': `${PAGE_ID}_${POST_ID}`,
+      'message_id': messageId,
+    }
+  }).then(function(response) {
+    if(isValid) {
+      console.log('updating');
+      FbUser.findOneAndUpdate({fb_id: userId}, {$set:{link_sent: '1'}}, function(error, result) {
+        console.log('error', error);
+        console.log('result', result);
+      });
+    }
+  }).catch(function(error) {
     console.log(error);
     return;
-  }
+  });
 }
