@@ -41,30 +41,32 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
     let result = srmToWei(bigDecimal.multiply(amount, 0.001))
     console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
     if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
-      let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.MNEMONIC)
+      let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
 
-      let accountInfo = await connection.getAccountInfo(new PublicKey(address))
-      console.log(accountInfo, accountInfo.owner)
-      let mint, amount
-      if (!accountInfo) {
-        console.log('!accountInfo')
-      }
-      console.log(accountInfo.owner.toBase58())
-      console.log('aloooo', new PublicKey(
-        'G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',
-      ))
-      if (accountInfo.owner.toBase58() == new PublicKey('G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',)) {
-        console.log('innnnnnnnnnn')
-        console.log(slnUtils.parseTokenAccountData(accountInfo.data))
-        const data = slnUtils.parseTokenAccountData(accountInfo.data)
-        mint = data.mint
-        amount = data.amount
-        console.log('mint', mint, 'balance', amount)
-      }
-      if (!mint) {
-        console.log('!mint')
-      }
+      // let accountInfo = await connection.getAccountInfo(new PublicKey(address))
+      // console.log(accountInfo, accountInfo.owner)
+      // let mint, amount
+      // if (!accountInfo) {
+      //   console.log('!accountInfo')
+      // }
+      // console.log(accountInfo.owner.toBase58())
+      // console.log('aloooo', new PublicKey(
+      //   'G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',
+      // ))
+      // if (accountInfo.owner.toBase58() == new PublicKey('G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',)) {
+      //   console.log('innnnnnnnnnn')
+      //   console.log(slnUtils.parseTokenAccountData(accountInfo.data))
+      //   const data = slnUtils.parseTokenAccountData(accountInfo.data)
+      //   mint = data.mint
+      //   amount = data.amount
+      //   console.log('mint', mint, 'balance', amount)
+      // }
+      // if (!mint) {
+      //   console.log('!mint')
+      // }
+
       let recentBlockhash = await connection.getRecentBlockhash('recent')
+      console.log('recentBlockhash',recentBlockhash)
       let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
       .add(
         slnUtils.transfer({
@@ -112,7 +114,7 @@ exports.claimASRM = [
     // if (check != null) { //disable when testing
     //   return apiResponse.successResponse(res, "already claimed") //disable when testing
     // } //disable when testing
-    const wallet = await web3ws.eth.accounts.wallet.add(process.env.POC_PRIVATE_KEY);
+    const wallet = await web3ws.eth.accounts.wallet.add(process.env.ASRM_PRIVATE_KEY);
     const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
     // if (parseFloat(pocBalance) - process.env.ASRM_REWARD < 500000000000000000000) {
     //   // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "Pool's Warning!", "POC pool's balance is below 500")
