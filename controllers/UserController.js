@@ -22,7 +22,6 @@ const {
 mongoose.set("useFindAndModify", false)
 
 const queues = new Queue('queue', {redis: {port: process.env.REDIS_PORT, host: '127.0.0.1'}});
-// console.log(queues)
 const connection = new Connection('http://testnet.solana.com', 'recent');
   queues.process(async function(job, done) {
     // done()
@@ -30,7 +29,7 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
     let claimSrm = await ClaimSrm.findOne({tx_hast : job.data.txHash})
     console.log(claimSrm)
     if (claimSrm != null) {
-      console.log('falseeeeeeeeeee')
+      throw new Error('this txHash is already claimed')
     }
     let confirm = await web3ws.eth.getTransaction(job.data.txHash)
     console.log('transaction', confirm)
@@ -39,11 +38,32 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
     let wallet = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
     let srmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
     console.log('srmAddress',srmAddress)
-    let result = srmToWei(bigDecimal.multiply(amount, 1000))
-    console.log('result', result)
-    console.log(confirm.from.toLowerCase() == wallet,confirm.from , wallet)
-    if (confirm.to == process.env.POC_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
+    let result = srmToWei(bigDecimal.multiply(amount, 0.001))
+    console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
+    if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
       let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.MNEMONIC)
+
+      let accountInfo = await connection.getAccountInfo(new PublicKey(address))
+      console.log(accountInfo, accountInfo.owner)
+      let mint, amount
+      if (!accountInfo) {
+        console.log('!accountInfo')
+      }
+      console.log(accountInfo.owner.toBase58())
+      console.log('aloooo', new PublicKey(
+        'G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',
+      ))
+      if (accountInfo.owner.toBase58() == new PublicKey('G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',)) {
+        console.log('innnnnnnnnnn')
+        console.log(slnUtils.parseTokenAccountData(accountInfo.data))
+        const data = slnUtils.parseTokenAccountData(accountInfo.data)
+        mint = data.mint
+        amount = data.amount
+        console.log('mint', mint, 'balance', amount)
+      }
+      if (!mint) {
+        console.log('!mint')
+      }
       let recentBlockhash = await connection.getRecentBlockhash('recent')
       let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
       .add(
@@ -63,6 +83,8 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
         console.log("error",error)
         throw new Error(error)
       })
+    } else {
+      throw new Error('False')
     }
   })
 
@@ -169,7 +191,6 @@ exports.download = [
 exports.getUser = [
   async function (req, res) {
     let user = await User.findOne({fb_id: req.params.fb_id})
-    console.log(user)
     if (user.claimed == 0) {
       return apiResponse.successResponseWithData(res, "this FB is not claimed yet", false)
     } else {
