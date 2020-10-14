@@ -117,7 +117,7 @@ function replyComment(conversationId, messageId, userId, isValid) {
   console.log(`Replying message: ${messageId}`);
   let message = '';
   if(isValid) {
-    message = `Click vào đây để download app và nhận bounty ${DOWNLOAD_LINK}/${userId}/${userId}`;
+    message = `Cảm ơn bạn đã tham gia chương trình. Vui lòng click vào đây để download app và nhận bounty ${DOWNLOAD_LINK}/${userId}/${userId}`;
   } else {
     message = 'EzDeFi cảm ơn bạn đã để lại comment. Tuy nhiên comment của bạn chưa hợp lệ (chưa đủ số lượng người tag hoặc bạn đã tag ở một comment trước đó). Xin vui lòng cập nhật lại comment để tiếp tục tham gia chương trình nhận quà tặng giá trị';
   }
