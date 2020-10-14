@@ -1,6 +1,7 @@
 const axios = require('axios');
 const Conversation = require('../models/ConversationModel');
 const FbUser = require('../models/FbUserModel');
+const User = require('../models/UserModel');
 
 const PAGE_ID = 1795330330742938;
 
@@ -82,6 +83,16 @@ async function checkConversation(conversationId, customerId) {
     return message_tags.indexOf(item) === index;
   });
   let isValid = (message_tags.length >= NUMBER_OF_TAGS) ? true : false;
+  let claimed = false;
+  User.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
+    if(error) {
+      return;
+    }
+
+    if(result && result.claimed == 1) {
+      claimed = true;
+    }
+  })
   FbUser.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
     if(error) return;
     if(!result) {
@@ -90,11 +101,11 @@ async function checkConversation(conversationId, customerId) {
         if(error) {
           Conversation.deleteOne({id: conversationId, customer_id: customerId})
         } else if (data) {
-          replyComment(conversationId, messageId, data.fb_id, isValid);
+          replyComment(conversationId, messageId, data.fb_id, isValid, claimed);
         }
       });
-    } else if(result.link_sent == '0') {
-      replyComment(conversationId, messageId, result.fb_id, isValid);
+    } else {
+      replyComment(conversationId, messageId, result.fb_id, isValid, claimed);
     }
   })
 }
@@ -113,13 +124,17 @@ function getMessages(conversationId, customerID) {
   })
 }
 
-function replyComment(conversationId, messageId, userId, isValid) {
+function replyComment(conversationId, messageId, userId, isValid, claimed) {
   console.log(`Replying message: ${messageId}`);
   let message = '';
-  if(isValid) {
-    message = `Cảm ơn bạn đã tham gia chương trình. Vui lòng click vào đây để download app và nhận bounty ${DOWNLOAD_LINK}/${userId}/${userId}`;
+  if(claimed) {
+    message = `ezDeFi cảm ơn bạn đã để lại comment, tuy nhiên bạn đã nhận được bounty rồi. Mời bạn vui lòng điền thông tin và tham gia vòng quay may mắn (nếu như bạn chưa tham gia) để có cơ hội nhận được iPhone 11 Pro Max`;
   } else {
-    message = 'EzDeFi cảm ơn bạn đã để lại comment. Tuy nhiên comment của bạn chưa hợp lệ (chưa đủ số lượng người tag hoặc bạn đã tag ở một comment trước đó). Xin vui lòng cập nhật lại comment để tiếp tục tham gia chương trình nhận quà tặng giá trị';
+    if(isValid) {
+      message = `Cảm ơn bạn đã tham gia chương trình. Vui lòng click vào đây để download app và nhận bounty ${DOWNLOAD_LINK}/${userId}/${userId}`;
+    } else {
+      message = 'EzDeFi cảm ơn bạn đã để lại comment. Tuy nhiên comment của bạn chưa hợp lệ (chưa đủ số lượng người tag hoặc bạn đã tag ở một comment trước đó). Xin vui lòng cập nhật lại comment để tiếp tục tham gia chương trình nhận quà tặng giá trị';
+    }
   }
   axios({
     method: 'post',
@@ -135,8 +150,7 @@ function replyComment(conversationId, messageId, userId, isValid) {
       'message_id': messageId,
     }
   }).then(function(response) {
-    if(isValid) {
-      console.log('updating');
+    if(isValid && !claimed) {
       FbUser.findOneAndUpdate({fb_id: userId}, {$set:{link_sent: '1'}}, function(error, result) {
         console.log('error', error);
         console.log('result', result);
