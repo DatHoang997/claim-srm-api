@@ -80,7 +80,7 @@ async function checkConversation(conversationId, customerId) {
   let messageId = last_message.id;
   let message_tags = last_message.message_tags;
   message_tags = message_tags.filter((item, index) => {
-    return (message_tags.indexOf(item) === index && item.type != 'page');
+    return (message_tags.indexOf(item) === index && item.type === 'user');
   });
   let isValid = (message_tags.length >= NUMBER_OF_TAGS) ? true : false;
   let claimed = false;
