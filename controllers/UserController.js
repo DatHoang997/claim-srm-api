@@ -23,77 +23,131 @@ mongoose.set("useFindAndModify", false)
 
 const queues = new Queue('queue', {redis: {port: process.env.REDIS_PORT, host: '127.0.0.1'}});
 const connection = new Connection('http://testnet.solana.com', 'recent');
+
   queues.process(async function(job, done) {
     // done()
-    console.log(job.data)
-    let claimSrm = await ClaimSrm.findOne({tx_hast : job.data.txHash})
-    console.log(claimSrm)
-    if (claimSrm != null) {
-      throw new Error('this txHash is already claimed')
-    }
-    let confirm = await web3ws.eth.getTransaction(job.data.txHash)
-    console.log('transaction', confirm)
-    let amount = weiToPOC(await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
-    console.log(amount, await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
-    let wallet = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
-    let srmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
-    console.log('srmAddress',srmAddress)
-    let result = srmToWei(bigDecimal.multiply(amount, 0.001))
-    console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
-    if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
-      let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
+    if (job.data.type == 0) {
+      console.log(job.data)
+      let acc = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
+      let fbId = job.data.message.slice(0, job.data.message.indexOf('.'))
+      console.log('fb_id', fbId)
+      let asrmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
+      console.log('asrm', asrmAddress)
+      let user = await User.findOne({fb_id: fbId})
+      console.log(user)
+      console.log(user.wallet_address)
+      if (user.wallet_address == acc) {
+        // if (user.claimed == '1') { //disable when testing
+        //   return apiResponse.successResponse(res, "already claimed") //disable when testing
+        // } //disable when testing
+        // let check = await User.findOne({wallet_address: asrmAddress}) //disable when testing
+        // if (check != null) { //disable when testing
+        //   return apiResponse.successResponse(res, "already claimed") //disable when testing
+        // } //disable when testing
+        const wallet = await web3ws.eth.accounts.wallet.add(process.env.ASRM_PRIVATE_KEY);
+        const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
+        // if (parseFloat(pocBalance) - process.env.ASRM_REWARD < 500000000000000000000) {
+        //   // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "Pool's Warning!", "POC pool's balance is below 500")
+        //   // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "Pool's Warning!", "POC Pool's balance is below 500")
+        //   console.log('check balance')
+        // }
+        if (parseFloat(pocBalance) > process.env.ASRM_REWARD) {
+          try {
+            global.token_contract.methods.transfer(asrmAddress, process.env.ASRM_REWARD)
+            .send({from: wallet.address, gasPrice: '0'}
+            ).then(async function (data) {
+              const lastCheck = async () => {
+                console.log('DONE')
+                const check = await web3ws.eth.getTransaction(data.transactionHash)
+                if (check.blockHash) {
+                  clearInterval(checkFunction)
+                  await User.findOneAndUpdate({fb_id: fbId}, {$set:{wallet_address: asrmAddress, claimed: 1}})
+                  job.progress(100)
+                  done()
+                }
+              }
+              let checkFunction = setInterval(lastCheck, 2000);
+            })
+          } catch(ex) {
+            throw new Error('Cannot confirm', ex)
+          }
+        } else {
+          throw new Error('not enough POC')
+          // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "POC pool's balance is running out")
+          // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "POC Pool's balance is running out")
+        }
+      }
+    } else if (job.data.type == 1) {
+      console.log(job.data)
+      let claimSrm = await ClaimSrm.findOne({tx_hast : job.data.txHash})
+      console.log(claimSrm)
+      if (claimSrm != null) {
+        throw new Error('this txHash is already claimed')
+      }
+      let confirm = await web3ws.eth.getTransaction(job.data.txHash)
+      console.log('transaction', confirm)
+      let amount = weiToPOC(await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
+      console.log(amount, await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
+      let wallet = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
+      let srmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
+      console.log('srmAddress',srmAddress)
+      let result = srmToWei(bigDecimal.multiply(amount, 0.001))
+      console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
+      if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
+        let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
 
-      // let accountInfo = await connection.getAccountInfo(new PublicKey(address))
-      // console.log(accountInfo, accountInfo.owner)
-      // let mint, amount
-      // if (!accountInfo) {
-      //   console.log('!accountInfo')
-      // }
-      // console.log(accountInfo.owner.toBase58())
-      // console.log('aloooo', new PublicKey(
-      //   'G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',
-      // ))
-      // if (accountInfo.owner.toBase58() == new PublicKey('G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',)) {
-      //   console.log('innnnnnnnnnn')
-      //   console.log(slnUtils.parseTokenAccountData(accountInfo.data))
-      //   const data = slnUtils.parseTokenAccountData(accountInfo.data)
-      //   mint = data.mint
-      //   amount = data.amount
-      //   console.log('mint', mint, 'balance', amount)
-      // }
-      // if (!mint) {
-      //   console.log('!mint')
-      // }
+        // let accountInfo = await connection.getAccountInfo(new PublicKey(address))
+        // console.log(accountInfo, accountInfo.owner)
+        // let mint, amount
+        // if (!accountInfo) {
+        //   console.log('!accountInfo')
+        // }
+        // console.log(accountInfo.owner.toBase58())
+        // console.log('aloooo', new PublicKey(
+        //   'G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',
+        // ))
+        // if (accountInfo.owner.toBase58() == new PublicKey('G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',)) {
+        //   console.log('innnnnnnnnnn')
+        //   console.log(slnUtils.parseTokenAccountData(accountInfo.data))
+        //   const data = slnUtils.parseTokenAccountData(accountInfo.data)
+        //   mint = data.mint
+        //   amount = data.amount
+        //   console.log('mint', mint, 'balance', amount)
+        // }
+        // if (!mint) {
+        //   console.log('!mint')
+        // }
 
-      let recentBlockhash = await connection.getRecentBlockhash('recent')
-      console.log('recentBlockhash',recentBlockhash)
-      let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
-      .add(
-        slnUtils.transfer({
-          owner: account.publicKey, // from SOL address
-          source: new PublicKey(process.env.SRM_ADDRESS), // from SRM address
-          destination: new PublicKey(srmAddress), // to SRM address
-          amount: result //ok
+        let recentBlockhash = await connection.getRecentBlockhash('recent')
+        console.log('recentBlockhash',recentBlockhash)
+        let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
+        .add(
+          slnUtils.transfer({
+            owner: account.publicKey, // from SOL address
+            source: new PublicKey(process.env.SRM_ADDRESS), // from SRM address
+            destination: new PublicKey(srmAddress), // to SRM address
+            amount: result //ok
+          })
+        )
+        console.log(transaction)
+        connection.sendTransaction(transaction, [account]).then(transfer=>{
+          job.progress(100)
+          done()
+          console.log('transfer',transfer)
+        }).catch(error=>{
+          console.log("error",error)
+          throw new Error(error)
         })
-      )
-      console.log(transaction)
-      connection.sendTransaction(transaction, [account]).then(transfer=>{
-        job.progress(100)
-        done()
-        console.log('transfer',transfer)
-      }).catch(error=>{
-        console.log("error",error)
-        throw new Error(error)
-      })
-    } else {
-      throw new Error('False')
+      } else {
+        throw new Error('False')
+      }
     }
   })
 
   setQueues(queues)
 
 exports.claimASRM = [
-  body("data", "data can not be empty.").not().isEmpty().trim(),
+  body("message", "message can not be empty.").not().isEmpty().trim(),
   body("signature", "signature can not be empty.").not().isEmpty().trim(),
   async function (req, res) {
     const errors = validationResult(req)
@@ -101,50 +155,15 @@ exports.claimASRM = [
       return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array())
     }
     console.log(req.body)
-    let fbId = req.body.data.slice(0, req.body.data.indexOf('.'))
-    console.log('fb_id', fbId)
-    let asrmAddress = req.body.data.slice(req.body.data.indexOf('.') + 1, req.body.data.lastIndexOf('.'))
-    console.log('asrm', asrmAddress)
-    let user = await User.findOne({fb_id: fbId})
-    console.log(user)
-    // if (user.claimed == '1') { //disable when testing
-    //   return apiResponse.successResponse(res, "already claimed") //disable when testing
-    // } //disable when testing
-    // let check = await User.findOne({wallet_address: asrmAddress}) //disable when testing
-    // if (check != null) { //disable when testing
-    //   return apiResponse.successResponse(res, "already claimed") //disable when testing
-    // } //disable when testing
-    const wallet = await web3ws.eth.accounts.wallet.add(process.env.ASRM_PRIVATE_KEY);
-    const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
-    // if (parseFloat(pocBalance) - process.env.ASRM_REWARD < 500000000000000000000) {
-    //   // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "Pool's Warning!", "POC pool's balance is below 500")
-    //   // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "Pool's Warning!", "POC Pool's balance is below 500")
-    //   console.log('check balance')
-    // }
-    if (parseFloat(pocBalance) > process.env.ASRM_REWARD) {
-      try {
-        global.token_contract.methods.transfer(asrmAddress, process.env.ASRM_REWARD)
-        .send({from: wallet.address, gasPrice: '0'}
-        ).then(async function (data) {
-          const lastCheck = async () => {
-            console.log('DONE')
-            const check = await web3ws.eth.getTransaction(data.transactionHash)
-            if (check.blockHash){
-              clearInterval(checkFunction)
-              await User.findOneAndUpdate({fb_id: fbId}, {$set:{wallet_address: asrmAddress, claimed: 1}})
-              return apiResponse.successResponse(res, "transfer success")
-            }
-          }
-          let checkFunction = setInterval(lastCheck, 2000);
-        })
-      } catch(ex) {
-        throw new Error('Cannot confirm', ex)
-      }
-    } else {
-      throw new Error('not enough POC')
-      // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "POC pool's balance is running out")
-      // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "POC Pool's balance is running out")
+    const run = () => {
+      queues.add({
+        type: 0,
+        signature: req.body.signature,
+        message: req.body.message,
+      }, {lifo: true} );
+      return apiResponse.successResponseWithData(res, "transfer success", req.body.amount)
     }
+    setTimeout(run, 1000)
   }
 ];
 
@@ -153,7 +172,7 @@ exports.swapSRM = [
   body("message", "data can not be empty.").not().isEmpty().trim(),
   body("signature", "signature can not be empty.").not().isEmpty().trim(),
   body("txHash", "txHash can not be empty.").not().isEmpty().trim(),
-  async function (req, res) {
+ async function (req, res) {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
       return apiResponse.validationErrorWithData(res, "Validation Error.", errors.array())
@@ -161,6 +180,7 @@ exports.swapSRM = [
 
     const run = () => {
       queues.add({
+        type: 1,
         message: req.body.message,
         signature: req.body.signature,
         txHash: req.body.txHash,
