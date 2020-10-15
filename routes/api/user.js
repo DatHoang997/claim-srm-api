@@ -3,7 +3,7 @@ const UserController = require("../../controllers/UserController")
 
 var router = express.Router()
 
-router.post("/", UserController.claimZSRM)
+router.post("/", UserController.claimASRM)
 router.post("/swap", UserController.swapSRM)
 router.get("/get_user/:fb_id", UserController.getUser)
 

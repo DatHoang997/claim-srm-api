@@ -37,6 +37,10 @@ exports.pocToWei = function (wei) {
 	return decShift(wei, 18);
 }
 
+exports.srmToWei = function (wei) {
+	return decShift(wei, 2);
+}
+
 exports.usdtToWei = function (wei) {
 	return decShift(wei, 6);
 }
@@ -121,10 +125,10 @@ exports.getSolanaAccountAtIndex = async function(mnemonic, index = 1, accountInd
 	const Path = `m/501'/${index}'/0/${accountIndex}`
 	const deriverSeed = bip32.fromSeed(seedBuffer).derivePath(Path).privateKey;
 	const account = new Account(nacl.sign.keyPair.fromSeed(deriverSeed).secretKey);
-	// console.log('account', account)
-	// console.log("privateKey",Buffer.from(account.secretKey.buffer).toString('hex'))
-	// console.log("address",account.publicKey.toBase58())
-	// console.log("publicKey",account.publicKey.toString('hex'))
+	console.log('account', account)
+	console.log("privateKey",Buffer.from(account.secretKey.buffer).toString('hex'))
+	console.log("address",account.publicKey.toBase58())
+	console.log("publicKey",account.publicKey.toString('hex'))
 	return {
 		privateKey: Buffer.from(account.secretKey.buffer).toString('hex'),
 		address: account.publicKey.toBase58(),

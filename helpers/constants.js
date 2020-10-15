@@ -1,3 +1,3 @@
 module.exports = {
-  token_address: process.env.POC_CONTRACT_ADDRESS,
+  token_address: process.env.ASRM_CONTRACT_ADDRESS,
 }
