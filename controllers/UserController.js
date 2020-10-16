@@ -21,6 +21,8 @@ const {
 
 mongoose.set("useFindAndModify", false)
 
+// 6VTiGtHw67jJxnftBMbmnE5g8jsGJhYfXm55csfWmS5W
+
 const queues = new Queue('queue', {redis: {port: process.env.REDIS_PORT, host: '127.0.0.1'}});
 const connection = new Connection('http://testnet.solana.com', 'recent');
 
@@ -28,7 +30,7 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
     // done()
     if (job.data.type == 0) {
       console.log(job.data)
-      let acc = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
+      // let acc = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
       let fbId = job.data.message.slice(0, job.data.message.indexOf('.'))
       console.log('fb_id', fbId)
       let asrmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
@@ -36,14 +38,7 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
       let user = await User.findOne({fb_id: fbId})
       console.log(user)
       console.log(user.wallet_address)
-      if (user.wallet_address == acc) {
-        // if (user.claimed == '1') { //disable when testing
-        //   return apiResponse.successResponse(res, "already claimed") //disable when testing
-        // } //disable when testing
-        // let check = await User.findOne({wallet_address: asrmAddress}) //disable when testing
-        // if (check != null) { //disable when testing
-        //   return apiResponse.successResponse(res, "already claimed") //disable when testing
-        // } //disable when testing
+      if (user.fb_id == fbId) {
         const wallet = await web3ws.eth.accounts.wallet.add(process.env.ASRM_PRIVATE_KEY);
         const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
         // if (parseFloat(pocBalance) - process.env.ASRM_REWARD < 500000000000000000000) {
@@ -61,7 +56,7 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
                 const check = await web3ws.eth.getTransaction(data.transactionHash)
                 if (check.blockHash) {
                   clearInterval(checkFunction)
-                  await User.findOneAndUpdate({fb_id: fbId}, {$set:{wallet_address: asrmAddress, claimed: 1}})
+                  await User.findOneAndUpdate({fb_id: fbId}, {$set:{wallet_address: asrmAddress, claimed: '1'}})
                   job.progress(100)
                   done()
                 }
@@ -213,8 +208,8 @@ exports.download = [
 exports.getUser = [
   async function (req, res) {
     let user = await User.findOne({fb_id: req.params.fb_id})
-    if (user.claimed == 0) {
-      return apiResponse.successResponseWithData(res, "this FB is not claimed yet", false)
+    if (user.claimed == '0') {
+      return apiResponse.successResponseWithData(res, "Mời bạn ấn nhấn nút 'Nhận bounty' để chúng tôi chuyển tới bạn 300 aSRM", false)
     } else {
       return apiResponse.successResponseWithData(res, "this FB is already claimed", true)
     }

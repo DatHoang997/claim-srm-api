@@ -89,7 +89,7 @@ async function checkConversation(conversationId, customerId) {
       return;
     }
 
-    if(result && result.claimed == 1) {
+    if(result && result.claimed == '1') {
       claimed = true;
     }
   })

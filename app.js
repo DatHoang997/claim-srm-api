@@ -46,8 +46,6 @@ app.use(express.static(path.join(__dirname, "public")))
 //To allow cross-origin requests
 app.use(cors("*"))
 
-// Start scanning POC events
-// eventScanner(app)
 //Route Prefixes
 app.use("/", indexRouter)
 app.use("/api/", apiRouter)
