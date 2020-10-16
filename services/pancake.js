@@ -128,12 +128,12 @@ function replyComment(conversationId, messageId, userId, isValid, claimed) {
   console.log(`Replying message: ${messageId}`);
   let message = '';
   if(claimed) {
-    message = `ezDeFi cảm ơn bạn đã để lại comment, tuy nhiên bạn đã nhận được bounty rồi. Mời bạn vui lòng điền thông tin và tham gia vòng quay may mắn (nếu như bạn chưa tham gia) để có cơ hội nhận được iPhone 11 Pro Max`;
+    message = `ezDeFi cảm ơn bạn đã để lại comment. Tuy nhiên ID của bạn được ghi nhận đã tham gia nhận bounty. Nếu bạn chưa để lại thông tin và tham gia Vòng quay may mắn, vui lòng truy cập vào đường link chúng tôi đã gửi và làm theo hướng dẫn.`;
   } else {
     if(isValid) {
-      message = `Cảm ơn bạn đã tham gia chương trình. Vui lòng click vào đây để download app và nhận bounty ${DOWNLOAD_LINK}/${userId}/${userId}`;
+      message = `ezDeFi cảm ơn bạn đã để lại comment. Vui lòng truy cập vào đường link: ${DOWNLOAD_LINK}/${userId}/${userId} để có thể tải app ezDeFi và nhận Bounty. Mở app ezDeFi và truy cập vào Đ-app của chúng tôi để nhận ngay 300 aSRM.`;
     } else {
-      message = 'EzDeFi cảm ơn bạn đã để lại comment. Tuy nhiên comment của bạn chưa hợp lệ (chưa đủ số lượng người tag hoặc bạn đã tag ở một comment trước đó). Xin vui lòng cập nhật lại comment để tiếp tục tham gia chương trình nhận quà tặng giá trị';
+      message = 'ezDeFi cảm ơn bạn đã để lại comment. Tuy nhiên comment của bạn chưa hợp lệ (chưa đủ số lượng người tag hoặc bạn đã tag ở một comment trước đó). Xin vui lòng cập nhật lại comment để tiếp tục tham gia chương trình nhận quà tặng giá trị';
     }
   }
   axios({
