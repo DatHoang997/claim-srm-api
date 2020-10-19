@@ -27,7 +27,7 @@ const queues = new Queue('queue', {redis: {port: process.env.REDIS_PORT, host: '
 const connection = new Connection('http://testnet.solana.com', 'recent');
 
   queues.process(async function(job, done) {
-    // done()
+    done()
     if (job.data.type == 0) {
       console.log(job.data)
       // let acc = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
@@ -37,31 +37,27 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
       console.log('asrm', asrmAddress)
       let user = await User.findOne({fb_id: fbId})
       console.log(user)
-      console.log(user.wallet_address)
       if (user.fb_id == fbId) {
         const wallet = await web3ws.eth.accounts.wallet.add(process.env.ASRM_PRIVATE_KEY);
-        const pocBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
+        console.log('wallet', wallet)
+        console.log('@@@@@', global.token_contract.methods)
+        const asrmBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
+        console.log('asrmBalance', asrmBalance)
         // if (parseFloat(pocBalance) - process.env.ASRM_REWARD < 500000000000000000000) {
         //   // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "Pool's Warning!", "POC pool's balance is below 500")
         //   // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "Pool's Warning!", "POC Pool's balance is below 500")
         //   console.log('check balance')
         // }
-        if (parseFloat(pocBalance) > process.env.ASRM_REWARD) {
+        if (parseFloat(asrmBalance) > process.env.ASRM_REWARD) {
           try {
+            console.log('try')
             global.token_contract.methods.transfer(asrmAddress, process.env.ASRM_REWARD)
             .send({from: wallet.address, gasPrice: '0'}
             ).then(async function (data) {
-              const lastCheck = async () => {
-                console.log('DONE')
-                const check = await web3ws.eth.getTransaction(data.transactionHash)
-                if (check.blockHash) {
-                  clearInterval(checkFunction)
-                  await User.findOneAndUpdate({fb_id: fbId}, {$set:{wallet_address: asrmAddress, claimed: '1'}})
-                  job.progress(100)
-                  done()
-                }
-              }
-              let checkFunction = setInterval(lastCheck, 2000);
+              console.log(data)
+              await User.findOneAndUpdate({fb_id: fbId}, {$set:{wallet_address: asrmAddress, claimed: '1'}})
+              job.progress(100)
+              done()
             })
           } catch(ex) {
             throw new Error('Cannot confirm', ex)
@@ -75,6 +71,7 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
     } else if (job.data.type == 1) {
       console.log(job.data)
       let claimSrm = await ClaimSrm.findOne({tx_hast : job.data.txHash})
+      console.log('txhash',claimSrm)
       console.log(claimSrm)
       if (claimSrm != null) {
         throw new Error('this txHash is already claimed')
@@ -126,6 +123,8 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
         )
         console.log(transaction)
         connection.sendTransaction(transaction, [account]).then(transfer=>{
+          let newTxHash = new ClaimSrm ({tx_hash: job.data.txHash})
+          newTxHash.save()
           job.progress(100)
           done()
           console.log('transfer',transfer)
@@ -156,7 +155,7 @@ exports.claimASRM = [
         signature: req.body.signature,
         message: req.body.message,
       }, {lifo: true} );
-      return apiResponse.successResponseWithData(res, "transfer success", req.body.amount)
+      return apiResponse.successResponseWithData(res, "claim", req.body.amount)
     }
     setTimeout(run, 1000)
   }
@@ -180,7 +179,7 @@ exports.swapSRM = [
         signature: req.body.signature,
         txHash: req.body.txHash,
       }, {lifo: true} );
-      return apiResponse.successResponseWithData(res, "transfer success", req.body.amount)
+      return apiResponse.successResponseWithData(res, "swap success", req.body.amount)
     }
     setTimeout(run, 1000)
   }
@@ -208,6 +207,9 @@ exports.download = [
 exports.getUser = [
   async function (req, res) {
     let user = await User.findOne({fb_id: req.params.fb_id})
+    if (user == null) {
+      return apiResponse.successResponseWithData(res, "Không tìm thấy fb id", true)
+    }
     if (user.claimed == '0') {
       return apiResponse.successResponseWithData(res, "Mời bạn nhấn nút 'Nhận bounty' để chúng tôi chuyển tới bạn 300 aSRM", false)
     } else {
