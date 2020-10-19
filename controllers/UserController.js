@@ -67,7 +67,7 @@ const connection = new Connection('http://testnet.solana.com', 'recent');
             throw new Error('Cannot confirm', ex)
           }
         } else {
-          throw new Error('not enough POC')
+          throw new Error('not enough aSRM')
           // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "POC pool's balance is running out")
           // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "POC Pool's balance is running out")
         }
@@ -209,7 +209,7 @@ exports.getUser = [
   async function (req, res) {
     let user = await User.findOne({fb_id: req.params.fb_id})
     if (user.claimed == '0') {
-      return apiResponse.successResponseWithData(res, "Mời bạn ấn nhấn nút 'Nhận bounty' để chúng tôi chuyển tới bạn 300 aSRM", false)
+      return apiResponse.successResponseWithData(res, "Mời bạn nhấn nút 'Nhận bounty' để chúng tôi chuyển tới bạn 300 aSRM", false)
     } else {
       return apiResponse.successResponseWithData(res, "this FB is already claimed", true)
     }
