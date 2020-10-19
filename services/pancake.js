@@ -3,11 +3,11 @@ const Conversation = require('../models/ConversationModel');
 const FbUser = require('../models/FbUserModel');
 const User = require('../models/UserModel');
 
-const PAGE_ID = 1795330330742938;
+const PAGE_ID = process.env.FB_PAGE_ID;
 
-const POST_ID = 2744359005840061;
+const POST_ID = process.env.FB_POST_ID;
 
-const ACCESS_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJhMjhlOGFiMy0zNmY0LTQ2OTYtYjdmOS1iZTA2NmQ3NTExNGMiLCJpYXQiOjE2MDI1NzY3ODYsImZiX25hbWUiOiJOZ3V5ZW4gUXVhbmcgVGllbiIsImZiX2lkIjoiMTQ3MDg4MDg2OTY5MzIyOSIsImV4cCI6MTYxMDM1Mjc4Nn0.mRE-sFlxRVX-_Ljj1-iRLsDzOqsOECwVyCRlYHGlVJE';
+const ACCESS_TOKEN = process.env.FB_PANCAKE_TOKEN;
 
 const ENDPOINT = `https://pages.fm/api/v1/pages/${PAGE_ID}/`;
 
@@ -151,7 +151,7 @@ function replyComment(conversationId, messageId, userId, isValid, claimed) {
     }
   }).then(function(response) {
     if(isValid && !claimed) {
-      FbUser.findOneAndUpdate({fb_id: userId}, {$set:{link_sent: '1'}}, function(error, result) {
+      FbUser.findOneAndUpdate({fb_id: userId}, {$set:{link_sent: '1', conversation_id: conversationId}}, function(error, result) {
         console.log('error', error);
         console.log('result', result);
       });

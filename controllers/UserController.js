@@ -1,4 +1,5 @@
 const User = require("../models/UserModel")
+const FbUser = require('../models/FbUserModel')
 const ClaimSrm = require("../models/ClaimSrmModel")
 const { body, validationResult, Result } = require("express-validator")
 const apiResponse  = require("../helpers/apiResponse")
@@ -214,5 +215,39 @@ exports.getUser = [
       return apiResponse.successResponseWithData(res, "this FB is already claimed", true)
     }
 
+  }
+]
+
+const BOTBANHANG_FORM_URL = 'https://botbanhang.vn/app/1795330330742938/form/5f85729c817b370012f34006';
+
+exports.sendForm = [
+  function(req, res) {
+    let fbId = req.body.fbId;
+    FbUser.findOne({fb_id: fbId}, function(error, result) {
+      if(error || !result || !result.conversation_id) {
+        return;
+      }
+      let conversationId = result.conversation_id;
+      let url = 'https://api-bounty.ezdefi.com/form';
+      axios({
+        method: 'post',
+        url: `${ENDPOINT}conversations/${conversationId}/messages?access_token=${ACCESS_TOKEN}`,
+        headers: {
+          'conversation_id': conversationId,
+          'page_id': process.env.FB_PAGE_ID
+        },
+        data: {
+          'message': `Chúc mừng bạn đã nhận được Bounty từ ezDeFi. Chúng tôi vẫn còn những phần quà hấp dẫn dành cho bạn! Truy cập vào đường link này: ${url} để chúng tôi gửi quà tặng Cáp Kingdom 99k với giá 0 đồng và nhận cơ hội quay trúng Iphone Promax 11`,
+          'action': 'reply_inbox',
+          'thread_key': process.env.FB_THREAD_ID,
+        }
+      });
+    });
+  }
+]
+
+exports.redirectForm = [
+  function (req, res) {
+    res.redirect(BOTBANHANG_FORM_URL)
   }
 ]
