@@ -1,4 +1,5 @@
 const User = require("../models/UserModel")
+const FbUser = require('../models/FbUserModel')
 const ClaimSrm = require("../models/ClaimSrmModel")
 const { body, validationResult, Result } = require("express-validator")
 const apiResponse  = require("../helpers/apiResponse")
@@ -17,6 +18,7 @@ const {
   weiToPOC,
   srmToWei
 } = require('../helpers/utils')
+const { sendFormLink } = require('../services/pancake')
 
 mongoose.set("useFindAndModify", false)
 
@@ -213,5 +215,26 @@ exports.getUser = [
       return apiResponse.successResponseWithData(res, "this FB is already claimed", true)
     }
 
+  }
+]
+
+const BOTBANHANG_FORM_URL = 'https://botbanhang.vn/app/1795330330742938/form/5f85729c817b370012f34006';
+
+exports.sendForm = [
+  function(req, res) {
+    let fbId = req.body.fbId;
+    FbUser.findOne({fb_id: fbId}, function(error, result) {
+      if(error || !result || !result.conversation_id || !result.customer_id) {
+        return;
+      }
+      sendFormLink(result.conversation_id, result.customer_id);
+    });
+    return apiResponse.successResponse(res, 'Form link sent');
+  }
+]
+
+exports.redirectForm = [
+  function (req, res) {
+    res.redirect(BOTBANHANG_FORM_URL)
   }
 ]
