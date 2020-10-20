@@ -229,19 +229,7 @@ exports.sendForm = [
       }
       let conversationId = result.conversation_id;
       let url = 'https://api-bounty.ezdefi.com/form';
-      axios({
-        method: 'post',
-        url: `${ENDPOINT}conversations/${conversationId}/messages?access_token=${ACCESS_TOKEN}`,
-        headers: {
-          'conversation_id': conversationId,
-          'page_id': process.env.FB_PAGE_ID
-        },
-        data: {
-          'message': `Chúc mừng bạn đã nhận được Bounty từ ezDeFi. Chúng tôi vẫn còn những phần quà hấp dẫn dành cho bạn! Truy cập vào đường link này: ${url} để chúng tôi gửi quà tặng Cáp Kingdom 99k với giá 0 đồng và nhận cơ hội quay trúng Iphone Promax 11`,
-          'action': 'reply_inbox',
-          'thread_key': process.env.FB_THREAD_ID,
-        }
-      });
+      
     });
   }
 ]
