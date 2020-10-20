@@ -10,9 +10,8 @@ const slnUtils = require("../helpers/slnUtils")
 const Utils = require("../helpers/utils")
 const {web3ws, web3eth} = require("../helpers/web3")
 const firebase = require('../helpers/firebase')
-const axios = require("axios")
 const { setQueues } = require('bull-board')
-var Queue = require('bull');
+const Queue = require('bull');
 const bigDecimal = require('js-big-decimal');
 const {
   weiToPOC,
@@ -199,8 +198,6 @@ exports.download = [
     }
     console.log(refLink)
     res.redirect(refLink)
-    // return apiResponse.successResponseWithData(res, "Success", refLink)
-    // }
   }
 ]
 
@@ -208,7 +205,7 @@ exports.getUser = [
   async function (req, res) {
     let user = await User.findOne({fb_id: req.params.fb_id})
     if (user == null) {
-      return apiResponse.successResponseWithData(res, "Không tìm thấy fb id", true)
+      return apiResponse.successResponse(res, "not found fb_id")
     }
     if (user.claimed == '0') {
       return apiResponse.successResponseWithData(res, "Mời bạn nhấn nút 'Nhận bounty' để chúng tôi chuyển tới bạn 300 aSRM", false)
