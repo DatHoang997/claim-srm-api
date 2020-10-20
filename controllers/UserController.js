@@ -19,6 +19,7 @@ const {
   weiToPOC,
   srmToWei
 } = require('../helpers/utils')
+const { sendFormLink } = require('../services/pancake')
 
 mongoose.set("useFindAndModify", false)
 
@@ -224,13 +225,12 @@ exports.sendForm = [
   function(req, res) {
     let fbId = req.body.fbId;
     FbUser.findOne({fb_id: fbId}, function(error, result) {
-      if(error || !result || !result.conversation_id) {
+      if(error || !result || !result.conversation_id || !result.customer_id) {
         return;
       }
-      let conversationId = result.conversation_id;
-      let url = 'https://api-bounty.ezdefi.com/form';
-      
+      sendFormLink(result.conversation_id, result.customer_id);
     });
+    return apiResponse.successResponse(res, 'Form link sent');
   }
 ]
 

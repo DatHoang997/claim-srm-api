@@ -11,7 +11,7 @@ const ACCESS_TOKEN = process.env.FB_PANCAKE_TOKEN;
 
 const ENDPOINT = `https://pages.fm/api/v1/pages/${PAGE_ID}/`;
 
-const NUMBER_OF_TAGS = 5;
+const NUMBER_OF_TAGS = process.env.NUMBER_OF_TAGS;
 
 const DOWNLOAD_LINK = 'https://api-bounty.ezdefi.com/download';
 
@@ -74,7 +74,7 @@ async function checkConversation(conversationId, customerId) {
   let content = response.data;
   let messages = content.messages;
   let last_message = messages.slice(-1)[0];
-  if(!last_message.can_reply_privately || last_message.private_reply_conversation) {
+  if(!last_message || !last_message.can_reply_privately || last_message.private_reply_conversation) {
     return;
   }
   let messageId = last_message.id;
@@ -96,7 +96,7 @@ async function checkConversation(conversationId, customerId) {
   FbUser.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
     if(error) return;
     if(!result) {
-      let user = new FbUser({fb_id: content.customers[0].fb_id, link_sent: '0'});
+      let user = new FbUser({fb_id: content.customers[0].fb_id, link_sent: '0', conversation_id: conversationId, customer_id: content.customers[0].id});
       user.save(function(error, data) {
         if(error) {
           Conversation.deleteOne({id: conversationId, customer_id: customerId})
@@ -172,11 +172,7 @@ exports.sendFormLink = async function(conversationId, customerId) {
     return;
   }
 
-  console.log(response);
-
   let threadKey = response.data.thread_key;
-
-  console.log(threadKey);
 
   if(!threadKey) {
     return;
@@ -194,7 +190,15 @@ exports.sendFormLink = async function(conversationId, customerId) {
       'action': 'reply_inbox',
       'thread_key': threadKey,
     }
-  });
+  }).then(function(response) {
+    FbUser.findOneAndUpdate({conversation_id: conversationId, customer_id: customerId}, {$set:{form_link_sent: '1'}}, function(error, result) {
+      console.log('error', error);
+      console.log('result', result);
+    });
+  }).catch(function(error) {
+    console.log(error);
+    return;
+  });;
 }
 
 function getThreadKey(customerId) {

@@ -32,11 +32,7 @@ const { checkComment } = require('./services/pancake');
 
 const job = new CronJob('*/5 * * * * *', checkComment);
 
-// job.start();
-
-const { sendFormLink } = require('./services/pancake');
-
-sendFormLink('2745003412442287_2749325428676752', '2b514d66-2419-453e-a016-24236ac7df83');
+job.start();
 
 //don't show the log when it is test
 if(process.env.NODE_ENV !== "test") {
