@@ -233,9 +233,10 @@ exports.sendLuckyWheel = [
 
 exports.redirectLuckyWheel = [
   function (req, res) {
-    if(!req.params.fbId) {
+    console.log('query', req.query);
+    if(!req.query.fbId) {
       res.redirect(process.env.EZDEFI_HOME);
     }
-    res.redirect(`${process.env.FB_LUCKY_WHEEL_URL}?mid=${req.params.fbId}`)
+    res.redirect(`${process.env.FB_LUCKY_WHEEL_URL}?mid=${req.query.fbId}`)
   }
 ]
