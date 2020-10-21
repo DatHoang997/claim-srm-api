@@ -162,9 +162,9 @@ function replyComment(conversationId, messageId, userId, isValid, claimed) {
   });
 }
 
-exports.sendFormLink = async function(conversationId, customerId) {
+exports.sendLuckyWheelLink = async function(conversationId, fbId, customerId) {
   let response;
-  let url = 'https://api-bounty.ezdefi.com/form';
+  let url = `https://api-bounty.ezdefi.com/lucky_wheel?fbId=${fbId}`;
 
   try {
     response = await getThreadKey(customerId);
@@ -186,12 +186,12 @@ exports.sendFormLink = async function(conversationId, customerId) {
       'page_id': process.env.FB_PAGE_ID
     },
     data: {
-      'message': `Chúc mừng bạn đã nhận được Bounty từ ezDeFi. Chúng tôi vẫn còn những phần quà hấp dẫn dành cho bạn! Truy cập vào đường link này: ${url} để chúng tôi gửi quà tặng Cáp Kingdom 99k với giá 0 đồng và nhận cơ hội quay trúng Iphone Promax 11`,
+      'message': `Chúc mừng bạn đã nhận được Bounty từ ezDeFi. Chúng tôi vẫn còn những phần quà hấp dẫn dành cho bạn! Truy cập vào đường link này: ${url} để tham gia vòng quay với cơ hội trúng thưởng Iphone Promax 11`,
       'action': 'reply_inbox',
       'thread_key': threadKey,
     }
   }).then(function(response) {
-    FbUser.findOneAndUpdate({conversation_id: conversationId, customer_id: customerId}, {$set:{form_link_sent: '1'}}, function(error, result) {
+    FbUser.findOneAndUpdate({conversation_id: conversationId, customer_id: customerId}, {$set:{lucky_wheel_link_sent: '1'}}, function(error, result) {
       console.log('error', error);
       console.log('result', result);
     });

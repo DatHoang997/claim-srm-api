@@ -18,7 +18,7 @@ const {
   weiToPOC,
   srmToWei
 } = require('../helpers/utils')
-const { sendFormLink } = require('../services/pancake')
+const { sendLuckyWheelLink } = require('../services/pancake')
 
 mongoose.set("useFindAndModify", false)
 
@@ -218,23 +218,24 @@ exports.getUser = [
   }
 ]
 
-const BOTBANHANG_FORM_URL = 'https://botbanhang.vn/app/1795330330742938/form/5f85729c817b370012f34006';
-
-exports.sendForm = [
+exports.sendLuckyWheel = [
   function(req, res) {
     let fbId = req.body.fbId;
     FbUser.findOne({fb_id: fbId}, function(error, result) {
       if(error || !result || !result.conversation_id || !result.customer_id) {
         return;
       }
-      sendFormLink(result.conversation_id, result.customer_id);
+      sendLuckyWheelLink(result.conversation_id, result.fb_id, result.customer_id);
     });
-    return apiResponse.successResponse(res, 'Form link sent');
+    return apiResponse.successResponse(res, 'Lucky wheel link sent');
   }
 ]
 
-exports.redirectForm = [
+exports.redirectLuckyWheel = [
   function (req, res) {
-    res.redirect(BOTBANHANG_FORM_URL)
+    if(!req.params.fbId) {
+      res.redirect(process.env.EZDEFI_HOME);
+    }
+    res.redirect(`${process.env.FB_LUCKY_WHEEL_URL}?mid=${req.params.fbId}`)
   }
 ]
