@@ -96,7 +96,7 @@ async function checkConversation(conversationId, customerId) {
   FbUser.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
     if(error) return;
     if(!result) {
-      let user = new FbUser({fb_id: content.customers[0].fb_id, link_sent: '0', conversation_id: conversationId, customer_id: content.customers[0].id});
+      let user = new FbUser({fb_id: content.customers[0].fb_id, link_sent: '0', conversation_id: conversationId, customer_id: content.customers[0].id, customer_name: content.customers[0].name});
       user.save(function(error, data) {
         if(error) {
           Conversation.deleteOne({id: conversationId, customer_id: customerId})
