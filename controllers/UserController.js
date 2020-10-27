@@ -1,4 +1,5 @@
 const User = require("../models/UserModel")
+const FbUser = require('../models/FbUserModel')
 const ClaimSrm = require("../models/ClaimSrmModel")
 const { body, validationResult, Result } = require("express-validator")
 const apiResponse  = require("../helpers/apiResponse")
@@ -14,8 +15,7 @@ const { setQueues } = require('bull-board')
 const Queue = require('bull');
 const bigDecimal = require('js-big-decimal');
 const { weiToPOC, srmToWei } = require('../helpers/utils')
-
-var upload = require('../helpers/upload')
+const { sendLuckyWheelLink } = require('../services/pancake')
 
 mongoose.set("useFindAndModify", false)
 
@@ -269,5 +269,28 @@ exports.getInfo = [
       viettel: user.viettel
     }
     return apiResponse.successResponseWithData(res, "Success", data)
+  }
+]
+
+exports.sendLuckyWheel = [
+  function(req, res) {
+    let fbId = req.body.fbId;
+    FbUser.findOne({fb_id: fbId}, function(error, result) {
+      if(error || !result || !result.conversation_id || !result.customer_id) {
+        return;
+      }
+      sendLuckyWheelLink(result.conversation_id, result.fb_id, result.customer_id);
+    });
+    return apiResponse.successResponse(res, 'Lucky wheel link sent');
+  }
+]
+
+exports.redirectLuckyWheel = [
+  function (req, res) {
+    console.log('query', req.query);
+    if(!req.query.fbId) {
+      res.redirect(process.env.EZDEFI_HOME);
+    }
+    res.redirect(`${process.env.FB_LUCKY_WHEEL_URL}?mid=${req.query.fbId}`)
   }
 ]

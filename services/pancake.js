@@ -3,15 +3,15 @@ const Conversation = require('../models/ConversationModel');
 const FbUser = require('../models/FbUserModel');
 const User = require('../models/UserModel');
 
-const PAGE_ID = 1795330330742938;
+const PAGE_ID = process.env.FB_PAGE_ID;
 
-const POST_ID = 2744359005840061;
+const POST_ID = process.env.FB_POST_ID;
 
-const ACCESS_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJhMjhlOGFiMy0zNmY0LTQ2OTYtYjdmOS1iZTA2NmQ3NTExNGMiLCJpYXQiOjE2MDI1NzY3ODYsImZiX25hbWUiOiJOZ3V5ZW4gUXVhbmcgVGllbiIsImZiX2lkIjoiMTQ3MDg4MDg2OTY5MzIyOSIsImV4cCI6MTYxMDM1Mjc4Nn0.mRE-sFlxRVX-_Ljj1-iRLsDzOqsOECwVyCRlYHGlVJE';
+const ACCESS_TOKEN = process.env.FB_PANCAKE_TOKEN;
 
 const ENDPOINT = `https://pages.fm/api/v1/pages/${PAGE_ID}/`;
 
-const NUMBER_OF_TAGS = 5;
+const NUMBER_OF_TAGS = process.env.NUMBER_OF_TAGS;
 
 const DOWNLOAD_LINK = 'https://api-bounty.ezdefi.com/download';
 
@@ -74,7 +74,7 @@ async function checkConversation(conversationId, customerId) {
   let content = response.data;
   let messages = content.messages;
   let last_message = messages.slice(-1)[0];
-  if(!last_message.can_reply_privately || last_message.private_reply_conversation) {
+  if(!last_message || !last_message.can_reply_privately || last_message.private_reply_conversation) {
     return;
   }
   let messageId = last_message.id;
@@ -96,7 +96,7 @@ async function checkConversation(conversationId, customerId) {
   FbUser.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
     if(error) return;
     if(!result) {
-      let user = new FbUser({fb_id: content.customers[0].fb_id, link_sent: '0'});
+      let user = new FbUser({fb_id: content.customers[0].fb_id, link_sent: '0', conversation_id: conversationId, customer_id: content.customers[0].id, customer_name: content.customers[0].name});
       user.save(function(error, data) {
         if(error) {
           Conversation.deleteOne({id: conversationId, customer_id: customerId})
@@ -151,7 +151,7 @@ function replyComment(conversationId, messageId, userId, isValid, claimed) {
     }
   }).then(function(response) {
     if(isValid && !claimed) {
-      FbUser.findOneAndUpdate({fb_id: userId}, {$set:{link_sent: '1'}}, function(error, result) {
+      FbUser.findOneAndUpdate({fb_id: userId}, {$set:{link_sent: '1', conversation_id: conversationId}}, function(error, result) {
         console.log('error', error);
         console.log('result', result);
       });
@@ -160,4 +160,54 @@ function replyComment(conversationId, messageId, userId, isValid, claimed) {
     console.log(error);
     return;
   });
+}
+
+exports.sendLuckyWheelLink = async function(conversationId, fbId, customerId) {
+  let response;
+  let url = `https://api-bounty.ezdefi.com/lucky_wheel?fbId=${fbId}`;
+
+  try {
+    response = await getThreadKey(customerId);
+  } catch(error) {
+    return;
+  }
+
+  let threadKey = response.data.thread_key;
+
+  if(!threadKey) {
+    return;
+  }
+
+  axios({
+    method: 'post',
+    url: `${ENDPOINT}conversations/${conversationId}/messages?access_token=${ACCESS_TOKEN}`,
+    headers: {
+      'conversation_id': conversationId,
+      'page_id': process.env.FB_PAGE_ID
+    },
+    data: {
+      'message': `Chúc mừng bạn đã nhận được Bounty từ ezDeFi. Chúng tôi vẫn còn những phần quà hấp dẫn dành cho bạn! Truy cập vào đường link này: ${url} để tham gia vòng quay với cơ hội trúng thưởng Iphone Promax 11`,
+      'action': 'reply_inbox',
+      'thread_key': threadKey,
+    }
+  }).then(function(response) {
+    FbUser.findOneAndUpdate({conversation_id: conversationId, customer_id: customerId}, {$set:{lucky_wheel_link_sent: '1'}}, function(error, result) {
+      console.log('error', error);
+      console.log('result', result);
+    });
+  }).catch(function(error) {
+    console.log(error);
+    return;
+  });;
+}
+
+function getThreadKey(customerId) {
+  return axios.get(`${ENDPOINT}/customers/${customerId}/inbox_preview`, {
+    headers: {
+      'page_id': PAGE_ID,
+    },
+    params: {
+      'access_token': ACCESS_TOKEN
+    }
+  })  
 }
