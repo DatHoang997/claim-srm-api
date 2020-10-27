@@ -16,6 +16,7 @@ const Queue = require('bull');
 const bigDecimal = require('js-big-decimal');
 const { weiToPOC, srmToWei } = require('../helpers/utils')
 const { sendLuckyWheelLink } = require('../services/pancake')
+var upload = require('../helpers/upload')
 
 mongoose.set("useFindAndModify", false)
 
