@@ -13,10 +13,9 @@ const firebase = require('../helpers/firebase')
 const { setQueues } = require('bull-board')
 const Queue = require('bull');
 const bigDecimal = require('js-big-decimal');
-const {
-  weiToPOC,
-  srmToWei
-} = require('../helpers/utils')
+const { weiToPOC, srmToWei } = require('../helpers/utils')
+
+var upload = require('../helpers/upload')
 
 mongoose.set("useFindAndModify", false)
 
@@ -213,5 +212,62 @@ exports.getUser = [
       return apiResponse.successResponseWithData(res, "this FB is already claimed", true)
     }
 
+  }
+]
+
+exports.getWallet = [
+  async function (req, res) {
+    console.log(req.params.wallet)
+    let user = await User.findOne({wallet_address: req.params.wallet})
+    console.log(user)
+    if (user == null) {
+      return apiResponse.ErrorResponse(res, "not found wallet")
+    }
+    if (user.wallet_address) {
+      return apiResponse.successResponseWithData(res, "Success", user.wallet_address)
+    }
+  }
+]
+
+exports.info = [
+  upload.array('files'),
+  async function (req, res) {
+    console.log(req.body)
+    let check = await User.findOne({wallet_address: req.body.wallet.toLowerCase()})
+    if (!check) {
+      return apiResponse.ErrorResponse(res, "wrong")
+    }
+    if (!check.name) {
+      console.log('innnnn')
+      try {
+        let user = await User.findOneAndUpdate({wallet_address: req.body.wallet.toLowerCase()}, {$set:{name: req.body.name, address: req.body.address, phone: req.body.phoneNumber, viettel: req.body.viettel}})
+        console.log(user)
+        if (user) return apiResponse.successResponseWithData(res, "Success", user)
+        else return apiResponse.ErrorResponse(res, "false")
+      } catch (error) {
+        return apiResponse.ErrorResponse(res, "not found wallet")
+      }
+    } else {
+      return apiResponse.ErrorResponse(res, "filled")
+    }
+  }
+]
+
+exports.getInfo = [
+  upload.array('files'),
+  async function (req, res) {
+    console.log(req.params.wallet)
+    let user = await User.findOne({wallet_address: req.params.wallet})
+    console.log(user)
+    if (!user) {
+      return apiResponse.ErrorResponse(res, "wrong")
+    }
+    let data = {
+      name: user.name,
+      address: user.address,
+      phone: user.phone,
+      viettel: user.viettel
+    }
+    return apiResponse.successResponseWithData(res, "Success", data)
   }
 ]
