@@ -19,6 +19,7 @@ const {
   srmToWei
 } = require('../helpers/utils')
 const { sendLuckyWheelLink } = require('../services/pancake')
+const Share = require('../models/ShareModel')
 
 mongoose.set("useFindAndModify", false)
 
@@ -206,15 +207,42 @@ exports.download = [
 exports.getUser = [
   async function (req, res) {
     let user = await User.findOne({fb_id: req.params.fb_id})
+
     if (user == null) {
       return apiResponse.successResponse(res, "not found fb_id")
     }
-    if (user.claimed == '0') {
-      return apiResponse.successResponseWithData(res, "Mời bạn nhấn nút 'Nhận bounty' để chúng tôi chuyển tới bạn 300 aSRM", false)
-    } else {
-      return apiResponse.successResponseWithData(res, "this FB is already claimed", true)
-    }
 
+    return apiResponse.successResponseData(res, user)
+  }
+]
+
+exports.addSpinNumber = [
+  async function (req, res) {
+    let fbId = req.body.user_fb_id
+    let friendFbId = req.body.friend_fb_id
+    let user = await User.findOne({fb_id: fbId})
+    if(!user) {
+      console.log('abc')
+      return apiResponse.successResponse(res)
+    }
+    let data = await Share.find({fb_id: fbId})
+    let exist = data.find(item => item.fb_id == fbId && item.friend_fb_id == friendFbId);
+    if(data.length >= process.env.MAX_SHARE_TIME || exist) {
+      console.log('def')
+      return apiResponse.successResponse(res)
+    }
+    let share = new Share({fb_id: fbId, friend_fb_id: friendFbId});
+    await share.save()
+    await User.findOneAndUpdate({fb_id: fbId},{$set:{spin_number: user.spin_number + 1}})
+
+    console.log('xyz')
+    return apiResponse.successResponse(res)
+  }
+]
+
+exports.redirectToChatbot = [
+  function(req, res) {
+    res.redirect(`http://m.me/1795330330742938?ref=JFSNXoL76.ref.${req.query.fbId}`)
   }
 ]
 
