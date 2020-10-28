@@ -8,6 +8,7 @@ var UserSchema = new mongoose.Schema({
 	phone: {type: String, required: false, unique: false},
 	address: {type: String, required: false, unique: false},
 	viettel: {type: String, required: false, unique: false},
+	spin_number: {type: Number, required: true, default: 3}
 }, {timestamps: true})
 
 module.exports = mongoose.model("User", UserSchema)

@@ -10,5 +10,6 @@ router.get("/get_info/:wallet", UserController.getInfo)
 router.get("/get_user/:fb_id", UserController.getUser)
 router.get("/get_wallet/:wallet", UserController.getWallet)
 router.post('/send_lucky_wheel', UserController.sendLuckyWheel)
+router.post('/add_spin_number', UserController.addSpinNumber)
 
 module.exports = router;

@@ -32,7 +32,7 @@ const { checkComment } = require('./services/pancake');
 
 const job = new CronJob('*/5 * * * * *', checkComment);
 
-job.start();
+// job.start();
 
 //don't show the log when it is test
 if(process.env.NODE_ENV !== "test") {
