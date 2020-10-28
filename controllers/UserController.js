@@ -211,7 +211,7 @@ exports.getUser = [
       return apiResponse.ErrorResponse(res, "not found fb_id")
     }
     if (user.claimed == '0') {
-      return apiResponse.successResponseWithData(res, "Mời bạn nhấn nút 'Nhận bounty' để chúng tôi chuyển tới bạn 300 aSRM", user)
+      return apiResponse.successResponseData(res, user)
     } else {
     return apiResponse.successResponseData(res, user)
     }
