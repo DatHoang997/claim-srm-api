@@ -17,6 +17,7 @@ const bigDecimal = require('js-big-decimal');
 const { weiToPOC, srmToWei } = require('../helpers/utils')
 const { sendLuckyWheelLink } = require('../services/pancake')
 
+var upload = require('../helpers/upload')
 mongoose.set("useFindAndModify", false)
 
 // 6VTiGtHw67jJxnftBMbmnE5g8jsGJhYfXm55csfWmS5W
@@ -204,10 +205,10 @@ exports.getUser = [
   async function (req, res) {
     let user = await User.findOne({fb_id: req.params.fb_id})
     if (user == null) {
-      return apiResponse.successResponse(res, "not found fb_id")
+      return apiResponse.ErrorResponse(res, "not found fb_id")
     }
     if (user.claimed == '0') {
-      return apiResponse.successResponseWithData(res, "Mời bạn nhấn nút 'Nhận bounty' để chúng tôi chuyển tới bạn 300 aSRM", false)
+      return apiResponse.successResponseWithData(res, "Mời bạn nhấn nút 'Nhận bounty' để chúng tôi chuyển tới bạn 300 aSRM", user)
     } else {
       return apiResponse.successResponseWithData(res, "this FB is already claimed", true)
     }
@@ -259,16 +260,14 @@ exports.getInfo = [
     console.log(req.params.wallet)
     let user = await User.findOne({wallet_address: req.params.wallet})
     console.log(user)
-    if (!user) {
-      return apiResponse.ErrorResponse(res, "wrong")
+    if (!user.name) {
+      console.log(user)
+      return apiResponse.successResponseWithData(res, "false", user)
     }
-    let data = {
-      name: user.name,
-      address: user.address,
-      phone: user.phone,
-      viettel: user.viettel
+    if (user.name) {
+      console.log('true', user)
+      return apiResponse.successResponseWithData(res, "Success", user)
     }
-    return apiResponse.successResponseWithData(res, "Success", data)
   }
 ]
 
