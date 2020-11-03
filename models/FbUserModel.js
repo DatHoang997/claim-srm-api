@@ -6,6 +6,7 @@ const FbUserSchema = mongoose.Schema(
     link_sent: String,
     conversation_id: String,
     customer_id: String,
+    customer_name: String,
     lucky_wheel_link_sent: String
   }
 );
