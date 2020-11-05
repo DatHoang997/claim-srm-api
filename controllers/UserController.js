@@ -266,14 +266,14 @@ exports.info = [
   upload.array('files'),
   async function (req, res) {
     console.log(req.body)
-    let check = await User.findOne({wallet_address: req.body.wallet.toLowerCase()})
+    let check = await User.findOne({wallet_address: req.body.wallet})
     if (!check) {
       return apiResponse.ErrorResponse(res, "wrong")
     }
     if (!check.name) {
       console.log('innnnn')
       try {
-        let user = await User.findOneAndUpdate({wallet_address: req.body.wallet.toLowerCase()}, {$set:{name: req.body.name, address: req.body.address, phone: req.body.phoneNumber, viettel: req.body.viettel}})
+        let user = await User.findOneAndUpdate({wallet_address: req.body.wallet}, {$set:{name: req.body.name, address: req.body.address, phone: req.body.phoneNumber, viettel: req.body.viettel}})
         console.log(user)
         if (user) return apiResponse.successResponseWithData(res, "Success", user)
         else return apiResponse.ErrorResponse(res, "false")
