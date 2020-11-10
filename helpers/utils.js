@@ -118,7 +118,7 @@ function _decShiftPositive(s, d) {
 	return '0';
 }
 
-exports.getSolanaAccountAtIndex = async function(mnemonic, index = 1, accountIndex = 0) {
+exports.getSolanaAccountAtIndex = async function(mnemonic, index = 0, accountIndex = 0) {
 	console.log('getSolanaAccountAtIndex')
 	const seed = await bip39.mnemonicToSeed(mnemonic);
 	const seedBuffer = Buffer.from(seed);

@@ -25,7 +25,7 @@ mongoose.set("useFindAndModify", false)
 // 6VTiGtHw67jJxnftBMbmnE5g8jsGJhYfXm55csfWmS5W
 
 const queues = new Queue('queue', {redis: {port: process.env.REDIS_PORT, host: '127.0.0.1'}});
-const connection = new Connection('http://testnet.solana.com', 'recent');
+const connection = new Connection('https://solana-api.projectserum.com', 'recent');
 
   queues.process(async function(job, done) {
     done()
