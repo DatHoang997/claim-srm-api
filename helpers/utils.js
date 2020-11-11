@@ -38,7 +38,7 @@ exports.pocToWei = function (wei) {
 }
 
 exports.srmToWei = function (wei) {
-	return decShift(wei, 2);
+	return decShift(wei, 6);
 }
 
 exports.usdtToWei = function (wei) {
