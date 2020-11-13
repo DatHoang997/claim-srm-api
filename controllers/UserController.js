@@ -91,7 +91,7 @@ let sendEmail = true
           const publicKey = new PublicKey(process.env.SRM_ADDRESS)
           const accountInfo = await connection.getAccountInfo(publicKey)
           let balance
-          let mint, amount
+          let amount
           console.log('accountInfo',accountInfo)
           if (!accountInfo) {
             throw new Error('False')
@@ -113,10 +113,10 @@ let sendEmail = true
             //   throw new Error('False')
             // }
           }
-          if (!mint) {
-            console.log('!mint')
-            throw new Error('False')
-          }
+          // if (!mint) {
+          //   console.log('!mint')
+          //   throw new Error('False')
+          // }
         } catch (e) {
           throw new Error('False')
         }
