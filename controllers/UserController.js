@@ -16,7 +16,6 @@ const bigDecimal = require('js-big-decimal');
 const { weiToPOC, srmToWei, weiToSRM } = require('../helpers/utils')
 const { sendLuckyWheelLink } = require('../services/pancake')
 var upload = require('../helpers/upload')
-const mailer = require("../helpers/mailer")
 const Share = require('../models/ShareModel')
 
 var upload = require('../helpers/upload')
@@ -88,22 +87,38 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
       console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
       if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
         let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
+        console.log('@@@@@')
         try {
           const publicKey = new PublicKey(process.env.SRM_ADDRESS)
           const accountInfo = await connection.getAccountInfo(publicKey)
+          let balance
+          let mint, amount
           console.log('accountInfo',accountInfo)
+          if (!accountInfo) {
+
+            return
+          }
           console.log('accountInfo.owner', accountInfo.owner)
-          console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58(),accountInfo.owner.toBase58().equals(slnUtils.TOKEN_PROGRAM_ID))
-          if (accountInfo.owner.toBase58().equals(slnUtils.TOKEN_PROGRAM_ID)) {
+          console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58())
+          if (accountInfo.owner.equals(slnUtils.TOKEN_PROGRAM_ID)) {
             const data = slnUtils.parseTokenAccountData(accountInfo.data)
+            console.log('data', data)
+            mint = data.mint
+            amount = data.amount
             if (data.amount < 150000000) {
               console.log('cucu')
               mailer.send('noreply@ezDeFi.com', 'dathoang997@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
             }
           }
-        } catch (e) {
-          throw new Error('False')
-        }
+          if (!mint) {
+            console.log('!mint')
+            balance = accountInfo.lamports
+            return
+          }
+          return
+          } catch (e) {
+            throw new Error('False')
+          }
 
         let recentBlockhash = await connection.getRecentBlockhash('recent')
         console.log('recentBlockhash',recentBlockhash)
