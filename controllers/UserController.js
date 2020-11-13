@@ -103,7 +103,7 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
             const data = slnUtils.parseTokenAccountData(accountInfo.data)
             if (data.amount < 150000000) {
               console.log('cucu')
-              mailer.send('noreply@ezDeFi.com', 'dathoang997@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
+              mailer.send('noreply@ezDeFi.com', 'daohoangthanh@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
             }
             if (data.amount < 400000) {
               console.log('moneyyyyy')
