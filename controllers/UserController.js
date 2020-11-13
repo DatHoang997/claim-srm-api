@@ -25,9 +25,8 @@ mongoose.set("useFindAndModify", false)
 
 const queues = new Queue('queue', {redis: {port: process.env.REDIS_PORT, host: '127.0.0.1'}});
 const connection = new Connection('https://solana-api.projectserum.com', 'recent');
-
+let sendEmail = true
   queues.process(async function(job, done) {
-    done()
     if (job.data.type == 0) {
       console.log(job.data)
       // let acc = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
@@ -101,14 +100,18 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
           console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
           if (accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
             const data = slnUtils.parseTokenAccountData(accountInfo.data)
-            if (data.amount < 150000000) {
+            if (data.amount < 1500000 && sendEmail == true) {
+              sendEmail = false
               console.log('cucu')
-              mailer.send('noreply@ezDeFi.com', 'daohoangthanh@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
+              mailer.send('noreply@ezDeFi.com', 'dathoang997@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
             }
-            if (data.amount < 400000) {
-              console.log('moneyyyyy')
-              throw new Error('False')
+            if (data.amount > 1500000 && sendEmail == false) {
+              sendEmail == true
             }
+            // if (data.amount < 400000) {
+            //   console.log('moneyyyyy')
+            //   throw new Error('False')
+            // }
           }
           if (!mint) {
             console.log('!mint')
