@@ -99,8 +99,8 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
             return
           }
           console.log('accountInfo.owner', accountInfo.owner)
-          console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58())
-          if (accountInfo.owner.toBase58().equals('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')) {
+          console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+          if (accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
             const data = slnUtils.parseTokenAccountData(accountInfo.data)
             console.log('data', data)
             mint = data.mint
