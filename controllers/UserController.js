@@ -95,30 +95,28 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
           let mint, amount
           console.log('accountInfo',accountInfo)
           if (!accountInfo) {
-
-            return
+            throw new Error('False')
           }
           console.log('accountInfo.owner', accountInfo.owner)
           console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
           if (accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
             const data = slnUtils.parseTokenAccountData(accountInfo.data)
-            console.log('data', data)
-            mint = data.mint
-            amount = data.amount
             if (data.amount < 150000000) {
               console.log('cucu')
               mailer.send('noreply@ezDeFi.com', 'dathoang997@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
             }
+            if (data.amount < 400000) {
+              console.log('moneyyyyy')
+              throw new Error('False')
+            }
           }
           if (!mint) {
             console.log('!mint')
-            balance = accountInfo.lamports
-            return
-          }
-          return
-          } catch (e) {
             throw new Error('False')
           }
+        } catch (e) {
+          throw new Error('False')
+        }
 
         let recentBlockhash = await connection.getRecentBlockhash('recent')
         console.log('recentBlockhash',recentBlockhash)
