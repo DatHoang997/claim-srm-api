@@ -119,27 +119,27 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
       }
 
 
-        let accountInfo = await connection.getAccountInfo(new PublicKey(address))
-        console.log(accountInfo, accountInfo.owner)
-        let mint, amount
-        if (!accountInfo) {
-          console.log('!accountInfo')
-        }
-        console.log(accountInfo.owner.toBase58())
-        console.log('aloooo', new PublicKey(
-          'G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',
-        ))
-        if (accountInfo.owner.toBase58() == new PublicKey('G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',)) {
-          console.log('innnnnnnnnnn')
-          console.log(slnUtils.parseTokenAccountData(accountInfo.data))
-          const data = slnUtils.parseTokenAccountData(accountInfo.data)
-          mint = data.mint
-          amount = data.amount
-          console.log('mint', mint, 'balance', amount)
-        }
-        if (!mint) {
-          console.log('!mint')
-        }
+        // let accountInfo = await connection.getAccountInfo(new PublicKey(address))
+        // console.log(accountInfo, accountInfo.owner)
+        // let mint, amount
+        // if (!accountInfo) {
+        //   console.log('!accountInfo')
+        // }
+        // console.log(accountInfo.owner.toBase58())
+        // console.log('aloooo', new PublicKey(
+        //   'G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',
+        // ))
+        // if (accountInfo.owner.toBase58() == new PublicKey('G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',)) {
+        //   console.log('innnnnnnnnnn')
+        //   console.log(slnUtils.parseTokenAccountData(accountInfo.data))
+        //   const data = slnUtils.parseTokenAccountData(accountInfo.data)
+        //   mint = data.mint
+        //   amount = data.amount
+        //   console.log('mint', mint, 'balance', amount)
+        // }
+        // if (!mint) {
+        //   console.log('!mint')
+        // }
 
         let recentBlockhash = await connection.getRecentBlockhash('recent')
         console.log('recentBlockhash',recentBlockhash)
