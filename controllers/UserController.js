@@ -88,7 +88,7 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
       if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
         let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
         console.log('@@@@@')
-        var balance
+
         try {
           const publicKey = new PublicKey('Aa2c4nz21fcLSHZ55ACfh9wEhHLTQBZvBNBGbP12cMXz')
           const accountInfo = await connection.getAccountInfo(publicKey)
