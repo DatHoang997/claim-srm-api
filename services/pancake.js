@@ -26,7 +26,7 @@ exports.checkComment = async function() {
 
   let conversations = response.data.conversations;
 
-  console.log(`Number of conversations: ${conversations.length}`);
+  // console.log(`Number of conversations: ${conversations.length}`);
 
   for(let conversation of conversations) {
     Conversation.findOne({id: conversation.id, customer_id: conversation.customers[0].id}, function (error, result) {
@@ -63,8 +63,8 @@ function getConversations() {
 }
 
 async function checkConversation(conversationId, customerId) {
-  console.log(`Checking conversation: ${conversationId}`);
-  console.log(customerId);
+  // console.log(`Checking conversation: ${conversationId}`);
+  // console.log(customerId);
   let response;
   try {
     response = await getMessages(conversationId, customerId);
@@ -84,15 +84,10 @@ async function checkConversation(conversationId, customerId) {
   });
   let isValid = (message_tags.length >= NUMBER_OF_TAGS) ? true : false;
   let claimed = false;
-  User.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
-    if(error) {
-      return;
-    }
-
-    if(result && result.claimed == '1') {
-      claimed = true;
-    }
-  })
+  let user = await User.findOne({fb_id: content.customers[0].fb_id});
+  if(user != null & user.claimed == '1') {
+    claimed = true;
+  }
   FbUser.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
     if(error) return;
     if(!result) {
@@ -111,7 +106,7 @@ async function checkConversation(conversationId, customerId) {
 }
 
 function getMessages(conversationId, customerID) {
-  console.log(`Getting messages of conversation: ${conversationId}`);
+  // console.log(`Getting messages of conversation: ${conversationId}`);
   return axios.get(`${ENDPOINT}conversations/${conversationId}/messages?access_token=${ACCESS_TOKEN}`, {
     headers: {
       'page_id': PAGE_ID,
