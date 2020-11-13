@@ -88,7 +88,7 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
       if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
         let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
         console.log('@@@@@')
-        let balance
+        var balance
         try {
           const publicKey = new PublicKey('ErKf3YU85MJMrRpUJxC7YzD84nTXnzG9yVvDNyNBcPhi')
           const accountInfo = await connection.getAccountInfo(publicKey)
@@ -101,11 +101,11 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
           }
           console.log('accountInfo.owner', accountInfo.owner)
           console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58())
-          if (accountInfo.owner.equals(slnUtils.TOKEN_PROGRAM_ID)) {
+          // if (accountInfo.owner.equals(slnUtils.TOKEN_PROGRAM_ID)) {
             const data = slnUtils.parseTokenAccountData(accountInfo.data)
             mint = data.mint
             amount = data.amount
-          }
+          // }
           if (!mint) {
             console.log('!mint')
             balance = accountInfo.lamports
