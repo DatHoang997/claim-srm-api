@@ -88,27 +88,29 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
       if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
         let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
         console.log('@@@@@')
-        let accountInfo = await connection.getAccountInfo(new PublicKey(address))
-        console.log('accountInfo', accountInfo, accountInfo.owner)
-        let mint, amount
-        if (!accountInfo) {
-          console.log('!accountInfo')
-        }
-        console.log(accountInfo.owner.toBase58())
-        console.log('aloooo', new PublicKey(
-          'G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',
-        ))
-        if (accountInfo.owner.toBase58() == new PublicKey('G5xnaQGf5HmXSGqCCoQHWQDREgqzXRneFQY6sYAzVWc6',)) {
-          console.log('innnnnnnnnnn')
-          console.log(slnUtils.parseTokenAccountData(accountInfo.data))
-          const data = slnUtils.parseTokenAccountData(accountInfo.data)
-          mint = data.mint
-          amount = data.amount
-          console.log('mint', mint, 'balance', amount)
-        }
-        if (!mint) {
-          console.log('!mint')
-        }
+
+        try {
+          const publicKey = new PublicKey('ErKf3YU85MJMrRpUJxC7YzD84nTXnzG9yVvDNyNBcPhi')
+          const accountInfo = await this.connection.getAccountInfo(publicKey)
+          let mint, amount
+          if (!accountInfo) {
+            this.balance = 0
+            return
+          }
+          if (accountInfo.owner.equals(slnUtils.TOKEN_PROGRAM_ID)) {
+            const data = slnUtils.parseTokenAccountData(accountInfo.data)
+            mint = data.mint
+            amount = data.amount
+          }
+          if (!mint) {
+            this.balance = accountInfo.lamports
+            return
+          }
+          this.balance = amount
+          return
+      } catch (e) {
+          console.error('Error: ', e);
+      }
 
         let recentBlockhash = await connection.getRecentBlockhash('recent')
         console.log('recentBlockhash',recentBlockhash)
