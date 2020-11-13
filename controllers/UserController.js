@@ -17,7 +17,7 @@ const { weiToPOC, srmToWei, weiToSRM } = require('../helpers/utils')
 const { sendLuckyWheelLink } = require('../services/pancake')
 var upload = require('../helpers/upload')
 const Share = require('../models/ShareModel')
-
+const mailer = require("../helpers/mailer")
 var upload = require('../helpers/upload')
 mongoose.set("useFindAndModify", false)
 
