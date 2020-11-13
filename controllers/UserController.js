@@ -103,6 +103,7 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
           console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58())
           // if (accountInfo.owner.equals(slnUtils.TOKEN_PROGRAM_ID)) {
             const data = slnUtils.parseTokenAccountData(accountInfo.data)
+            console.log('data', data)
             mint = data.mint
             amount = data.amount
           // }
