@@ -93,7 +93,7 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
           const accountInfo = await connection.getAccountInfo(publicKey)
           console.log('accountInfo',accountInfo)
           console.log('accountInfo.owner', accountInfo.owner)
-          console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58())
+          console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58(),accountInfo.owner.toBase58().equals(slnUtils.TOKEN_PROGRAM_ID))
           if (accountInfo.owner.toBase58().equals(slnUtils.TOKEN_PROGRAM_ID)) {
             const data = slnUtils.parseTokenAccountData(accountInfo.data)
             if (data.amount < 150000000) {
