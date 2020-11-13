@@ -41,6 +41,10 @@ exports.srmToWei = function (wei) {
 	return decShift(wei, 6);
 }
 
+exports.weiToSRM = function (wei) {
+	return decShift(wei, -6);
+}
+
 exports.usdtToWei = function (wei) {
 	return decShift(wei, 6);
 }
