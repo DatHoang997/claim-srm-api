@@ -90,7 +90,7 @@ const connection = new Connection('https://solana-api.projectserum.com', 'recent
         console.log('@@@@@')
         var balance
         try {
-          const publicKey = new PublicKey('ErKf3YU85MJMrRpUJxC7YzD84nTXnzG9yVvDNyNBcPhi')
+          const publicKey = new PublicKey('Aa2c4nz21fcLSHZ55ACfh9wEhHLTQBZvBNBGbP12cMXz')
           const accountInfo = await connection.getAccountInfo(publicKey)
           let mint, amount
           console.log('accountInfo',accountInfo)
