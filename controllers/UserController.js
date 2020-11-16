@@ -117,8 +117,8 @@ swapQueues.process(async function(job, done) {
         //   console.log('moneyyyyy')
         //   throw new Error('False')
         // }
-        let recentBlockhash = await connection.getRecentBlockhash('recent')
-        console.log('recentBlockhash',recentBlockhash)
+        // let recentBlockhash = await connection.getRecentBlockhash('recent')
+        // console.log('recentBlockhash',recentBlockhash)
         let transaction = new Transaction()
         .add(
           slnUtils.transfer({
