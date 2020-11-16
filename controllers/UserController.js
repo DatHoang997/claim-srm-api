@@ -134,7 +134,10 @@ let sendEmail = true
         )
         console.log(transaction)
         connection.sendTransaction(transaction, [account]).then(transfer=>{
-          let newTxHash = new ClaimSrm ({tx_hash: job.data.txHash})
+          let newTxHash = new ClaimSrm ({
+            tx_hash: job.data.txHash,
+            srm_tx_hash: transfer
+          })
           newTxHash.save()
           job.progress(100)
           done()
