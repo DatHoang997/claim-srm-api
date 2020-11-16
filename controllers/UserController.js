@@ -73,85 +73,171 @@ claimQueues.process(async function(job, done) {
 })
 
 swapQueues.process(async function(job, done) {
+  done()
   console.log(job.data)
   let claimSrm = await ClaimSrm.findOne({tx_hast : job.data.txHash})
-  console.log('txhash',claimSrm)
-  console.log(claimSrm)
   if (claimSrm != null) {
-    throw new Error('this txHash is already claimed')
-  }
-  let confirm = await web3ws.eth.getTransaction(job.data.txHash)
-  console.log('transaction', confirm)
-  let amount = weiToPOC(await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
-  console.log(amount, await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
-  let wallet = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
-  let srmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
-  console.log('srmAddress',srmAddress)
-  let result = srmToWei(bigDecimal.multiply(amount, 0.001))
-  console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
-  if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
-    let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
-    console.log('@@@@@')
-    try {
-      const publicKey = new PublicKey(process.env.SRM_ADDRESS)
-      const accountInfo = await connection.getAccountInfo(publicKey)
-      let balance
-      let amount
-      console.log('accountInfo',accountInfo)
-      if (!accountInfo) {
-        throw new Error('No acount info')
-      }
-      console.log('accountInfo.owner', accountInfo.owner)
-      console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
-      if (accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
-        const data = slnUtils.parseTokenAccountData(accountInfo.data)
-        if (data.amount < 1500000 && sendEmail == true) {
-          sendEmail = false
-          console.log('cucu')
-          mailer.send('noreply@ezDeFi.com', 'dathoang997@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
+    if (claimSrm.status == true) {
+      throw new Error('this txHash is already claimed')
+    }
+
+    let newTxHash = new ClaimSrm ({
+      tx_hash: job.data.txHash,
+      status: false
+    })
+    newTxHash.save()
+    console.log('txhash',claimSrm)
+    console.log(claimSrm)
+    let confirm = await web3ws.eth.getTransaction(job.data.txHash)
+    console.log('transaction', confirm)
+    let amount = weiToPOC(await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
+    console.log(amount, await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
+    let wallet = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
+    let srmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
+    console.log('srmAddress',srmAddress)
+    let result = srmToWei(bigDecimal.multiply(amount, 0.001))
+    console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
+    if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
+      let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
+      console.log('@@@@@')
+      try {
+        const publicKey = new PublicKey(process.env.SRM_ADDRESS)
+        const accountInfo = await connection.getAccountInfo(publicKey)
+        let balance
+        let amount
+        console.log('accountInfo',accountInfo)
+        if (!accountInfo) {
+          throw new Error('No acount info')
         }
-        if (data.amount > 1500000 && sendEmail == false) {
-          sendEmail == true
+        console.log('accountInfo.owner', accountInfo.owner)
+        console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+        if (accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
+          const data = slnUtils.parseTokenAccountData(accountInfo.data)
+          if (data.amount < 1500000 && sendEmail == true) {
+            sendEmail = false
+            console.log('cucu')
+            mailer.send('noreply@ezDeFi.com', 'dathoang997@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
+          }
+          if (data.amount > 1500000 && sendEmail == false) {
+            sendEmail == true
+          }
+          // if (data.amount < 400000) {
+          //   console.log('moneyyyyy')
+          //   throw new Error('False')
+          // }
+          let recentBlockhash = await connection.getRecentBlockhash('recent')
+          console.log('recentBlockhash',recentBlockhash)
+          let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
+          .add(
+            slnUtils.transfer({
+              owner: account.publicKey, // from SOL address
+              source: new PublicKey(process.env.SRM_ADDRESS), // from SRM address
+              destination: new PublicKey(srmAddress), // to SRM address
+              amount: result //ok
+            })
+          )
+          console.log(transaction)
+          connection.sendTransaction(transaction, [account]).then(async function (transfer) {
+            newTxHash.save()
+            ClaimSrm.findOneAndUpdate({tx_hash: job.data.txHash},{$set:{srm_tx_hash: transfer, status: false}})
+            job.progress(100)
+            done()
+            console.log('transfer',transfer)
+          }).catch(error=>{
+            console.log("error",error)
+            throw new Error('transaction false', error)
+          })
         }
-        // if (data.amount < 400000) {
-        //   console.log('moneyyyyy')
+        // if (!mint) {
+        //   console.log('!mint')
         //   throw new Error('False')
         // }
-        // let recentBlockhash = await connection.getRecentBlockhash('recent')
-        // console.log('recentBlockhash',recentBlockhash)
-        let transaction = new Transaction()
-        .add(
-          slnUtils.transfer({
-            owner: account.publicKey, // from SOL address
-            source: new PublicKey(process.env.SRM_ADDRESS), // from SRM address
-            destination: new PublicKey(srmAddress), // to SRM address
-            amount: result //ok
-          })
-        )
-        console.log(transaction)
-        connection.sendTransaction(transaction, [account]).then(transfer=>{
-          let newTxHash = new ClaimSrm ({
-            tx_hash: job.data.txHash,
-            srm_tx_hash: transfer
-          })
-          newTxHash.save()
-          job.progress(100)
-          done()
-          console.log('transfer',transfer)
-        }).catch(error=>{
-          console.log("error",error)
-          throw new Error('transaction false', error)
-        })
+      } catch (e) {
+        throw new Error('Cannot confirm try catch')
       }
-      // if (!mint) {
-      //   console.log('!mint')
-      //   throw new Error('False')
-      // }
-    } catch (e) {
-      throw new Error('Cannot confirm try catch')
+    } else {
+      throw new Error('Cannot confirm')
     }
   } else {
-    throw new Error('Cannot confirm')
+    let newTxHash = new ClaimSrm ({
+      tx_hash: job.data.txHash,
+      status: true
+    })
+    newTxHash.save()
+    console.log('txhash',claimSrm)
+    console.log(claimSrm)
+    let confirm = await web3ws.eth.getTransaction(job.data.txHash)
+    console.log('transaction', confirm)
+    let amount = weiToPOC(await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
+    console.log(amount, await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
+    let wallet = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
+    let srmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
+    console.log('srmAddress',srmAddress)
+    let result = srmToWei(bigDecimal.multiply(amount, 0.001))
+    console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
+    if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
+      let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
+      console.log('@@@@@')
+      try {
+        const publicKey = new PublicKey(process.env.SRM_ADDRESS)
+        const accountInfo = await connection.getAccountInfo(publicKey)
+        let balance
+        let amount
+        console.log('accountInfo',accountInfo)
+        if (!accountInfo) {
+          throw new Error('No acount info')
+        }
+        console.log('accountInfo.owner', accountInfo.owner)
+        console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+        if (accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
+          const data = slnUtils.parseTokenAccountData(accountInfo.data)
+          if (data.amount < 1500000 && sendEmail == true) {
+            sendEmail = false
+            console.log('cucu')
+            mailer.send('noreply@ezDeFi.com', 'dathoang997@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
+          }
+          if (data.amount > 1500000 && sendEmail == false) {
+            sendEmail == true
+          }
+          // if (data.amount < 400000) {
+          //   console.log('moneyyyyy')
+          //   throw new Error('False')
+          // }
+          let recentBlockhash = await connection.getRecentBlockhash('recent')
+          console.log('recentBlockhash',recentBlockhash)
+          let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
+          .add(
+            slnUtils.transfer({
+              owner: account.publicKey, // from SOL address
+              source: new PublicKey(process.env.SRM_ADDRESS), // from SRM address
+              destination: new PublicKey(srmAddress), // to SRM address
+              amount: result //ok
+            })
+          )
+          console.log(transaction)
+          connection.sendTransaction(transaction, [account]).then(async function (transfer) {
+            console.log('transfer',transfer)
+            if (transfer) {
+              console.log('@@@@@@@',transfer)
+              await ClaimSrm.findOneAndUpdate({tx_hash: job.data.txHash},{$set:{srm_tx_hash: transfer, status: false}})
+            }
+            job.progress(100)
+            done()
+          }).catch(error=>{
+            console.log("error",error)
+            throw new Error('transaction false', error)
+          })
+        }
+        // if (!mint) {
+        //   console.log('!mint')
+        //   throw new Error('False')
+        // }
+      } catch (e) {
+        throw new Error('Cannot confirm try catch')
+      }
+    } else {
+      throw new Error('Cannot confirm')
+    }
   }
 })
 
