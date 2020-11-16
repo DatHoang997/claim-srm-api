@@ -27,6 +27,7 @@ const queues = new Queue('queue', {redis: {port: process.env.REDIS_PORT, host: '
 const connection = new Connection('https://solana-api.projectserum.com', 'recent');
 let sendEmail = true
   queues.process(async function(job, done) {
+    done()
     if (job.data.type == 0) {
       console.log(job.data)
       // let acc = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
