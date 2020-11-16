@@ -258,7 +258,7 @@ exports.addSpinNumber = [
 
 exports.redirectToChatbot = [
   function(req, res) {
-    res.redirect(`http://m.me/106268537839516?ref=2Cmwmi5wH.ref.${req.params.fb_id}`)
+    res.redirect(`${process.env.FACEBOOK_CHATBOT_URL}${req.params.fb_id}`)
   }
 ]
 
