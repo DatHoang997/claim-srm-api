@@ -67,6 +67,8 @@ let sendEmail = true
           // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "POC pool's balance is running out")
           // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "POC Pool's balance is running out")
         }
+      } else {
+        throw new Error('Cannot confirm fbid', ex)
       }
     } else if (job.data.type == 1) {
       console.log(job.data)
@@ -95,7 +97,7 @@ let sendEmail = true
           let amount
           console.log('accountInfo',accountInfo)
           if (!accountInfo) {
-            throw new Error('False')
+            throw new Error('No acount info')
           }
           console.log('accountInfo.owner', accountInfo.owner)
           console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
@@ -113,42 +115,41 @@ let sendEmail = true
             //   console.log('moneyyyyy')
             //   throw new Error('False')
             // }
+            let recentBlockhash = await connection.getRecentBlockhash('recent')
+            console.log('recentBlockhash',recentBlockhash)
+            let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
+            .add(
+              slnUtils.transfer({
+                owner: account.publicKey, // from SOL address
+                source: new PublicKey(process.env.SRM_ADDRESS), // from SRM address
+                destination: new PublicKey(srmAddress), // to SRM address
+                amount: result //ok
+              })
+            )
+            console.log(transaction)
+            connection.sendTransaction(transaction, [account]).then(transfer=>{
+              let newTxHash = new ClaimSrm ({
+                tx_hash: job.data.txHash,
+                srm_tx_hash: transfer
+              })
+              newTxHash.save()
+              job.progress(100)
+              done()
+              console.log('transfer',transfer)
+            }).catch(error=>{
+              console.log("error",error)
+              throw new Error(error)
+            })
           }
           // if (!mint) {
           //   console.log('!mint')
           //   throw new Error('False')
           // }
         } catch (e) {
-          throw new Error('False')
+          throw new Error('Cannot confirm try catch')
         }
-
-        let recentBlockhash = await connection.getRecentBlockhash('recent')
-        console.log('recentBlockhash',recentBlockhash)
-        let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
-        .add(
-          slnUtils.transfer({
-            owner: account.publicKey, // from SOL address
-            source: new PublicKey(process.env.SRM_ADDRESS), // from SRM address
-            destination: new PublicKey(srmAddress), // to SRM address
-            amount: result //ok
-          })
-        )
-        console.log(transaction)
-        connection.sendTransaction(transaction, [account]).then(transfer=>{
-          let newTxHash = new ClaimSrm ({
-            tx_hash: job.data.txHash,
-            srm_tx_hash: transfer
-          })
-          newTxHash.save()
-          job.progress(100)
-          done()
-          console.log('transfer',transfer)
-        }).catch(error=>{
-          console.log("error",error)
-          throw new Error(error)
-        })
       } else {
-        throw new Error('False')
+        throw new Error('Cannot confirm')
       }
     }
   })
