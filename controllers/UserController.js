@@ -139,7 +139,7 @@ swapQueues.process(async function(job, done) {
           console.log(transaction)
           connection.sendTransaction(transaction, [account]).then(async function (transfer) {
             newTxHash.save()
-            ClaimSrm.findOneAndUpdate({tx_hash: job.data.txHash},{$set:{srm_tx_hash: transfer, status: false}})
+            ClaimSrm.findOneAndUpdate({tx_hash: job.data.txHash},{$set:{tx_hash_srm: transfer, status: false}})
             job.progress(100)
             done()
             console.log('transfer',transfer)
@@ -219,7 +219,7 @@ swapQueues.process(async function(job, done) {
             console.log('transfer',transfer)
             if (transfer) {
               console.log('@@@@@@@',transfer)
-              await ClaimSrm.findOneAndUpdate({tx_hash: job.data.txHash},{$set:{srm_tx_hash: transfer, status: false}})
+              await ClaimSrm.findOneAndUpdate({tx_hash: job.data.txHash},{$set:{tx_hash_srm: transfer, status: false}})
             }
             job.progress(100)
             done()
