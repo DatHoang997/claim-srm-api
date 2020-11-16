@@ -23,138 +23,139 @@ mongoose.set("useFindAndModify", false)
 
 // 6VTiGtHw67jJxnftBMbmnE5g8jsGJhYfXm55csfWmS5W
 
-const queues = new Queue('queue', {redis: {port: process.env.REDIS_PORT, host: '127.0.0.1'}});
+const swapQueues = new Queue('swap', {redis: {port: process.env.REDIS_PORT, host: '127.0.0.1'}});
+const claimQueues = new Queue('claim', {redis: {port: process.env.REDIS_PORT, host: '127.0.0.1'}});
 const connection = new Connection('https://solana-api.projectserum.com', 'recent');
 let sendEmail = true
-  queues.process(async function(job, done) {
-    done()
-    if (job.data.type == 0) {
-      console.log(job.data)
-      // let acc = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
-      let fbId = job.data.message.slice(0, job.data.message.indexOf('.'))
-      console.log('fb_id', fbId)
-      let asrmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
-      console.log('asrm', asrmAddress)
-      let user = await User.findOne({fb_id: fbId})
-      console.log(user)
-      if (user.fb_id == fbId) {
-        const wallet = await web3ws.eth.accounts.wallet.add(process.env.ASRM_PRIVATE_KEY);
-        console.log('wallet', wallet)
-        console.log('@@@@@', global.token_contract.methods)
-        const asrmBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
-        console.log('asrmBalance', asrmBalance)
-        // if (parseFloat(pocBalance) - process.env.ASRM_REWARD < 500000000000000000000) {
-        //   // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "Pool's Warning!", "POC pool's balance is below 500")
-        //   // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "Pool's Warning!", "POC Pool's balance is below 500")
-        //   console.log('check balance')
-        // }
-        if (parseFloat(asrmBalance) > process.env.ASRM_REWARD) {
-          try {
-            console.log('try')
-            global.token_contract.methods.transfer(asrmAddress, process.env.ASRM_REWARD)
-            .send({from: wallet.address, gasPrice: '0'}
-            ).then(async function (data) {
-              console.log(data)
-              await User.findOneAndUpdate({fb_id: fbId}, {$set:{wallet_address: asrmAddress, claimed: '1'}})
-              job.progress(100)
-              done()
-            })
-          } catch(ex) {
-            throw new Error('Cannot confirm', ex)
-          }
-        } else {
-          throw new Error('not enough aSRM')
-          // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "POC pool's balance is running out")
-          // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "POC Pool's balance is running out")
-        }
-      } else {
-        throw new Error('Cannot confirm fbid', ex)
-      }
-    } else if (job.data.type == 1) {
-      console.log(job.data)
-      let claimSrm = await ClaimSrm.findOne({tx_hast : job.data.txHash})
-      console.log('txhash',claimSrm)
-      console.log(claimSrm)
-      if (claimSrm != null) {
-        throw new Error('this txHash is already claimed')
-      }
-      let confirm = await web3ws.eth.getTransaction(job.data.txHash)
-      console.log('transaction', confirm)
-      let amount = weiToPOC(await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
-      console.log(amount, await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
-      let wallet = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
-      let srmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
-      console.log('srmAddress',srmAddress)
-      let result = srmToWei(bigDecimal.multiply(amount, 0.001))
-      console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
-      if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
-        let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
-        console.log('@@@@@')
-        try {
-          const publicKey = new PublicKey(process.env.SRM_ADDRESS)
-          const accountInfo = await connection.getAccountInfo(publicKey)
-          let balance
-          let amount
-          console.log('accountInfo',accountInfo)
-          if (!accountInfo) {
-            throw new Error('No acount info')
-          }
-          console.log('accountInfo.owner', accountInfo.owner)
-          console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
-          if (accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
-            const data = slnUtils.parseTokenAccountData(accountInfo.data)
-            if (data.amount < 1500000 && sendEmail == true) {
-              sendEmail = false
-              console.log('cucu')
-              mailer.send('noreply@ezDeFi.com', 'dathoang997@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
-            }
-            if (data.amount > 1500000 && sendEmail == false) {
-              sendEmail == true
-            }
-            // if (data.amount < 400000) {
-            //   console.log('moneyyyyy')
-            //   throw new Error('False')
-            // }
-            let recentBlockhash = await connection.getRecentBlockhash('recent')
-            console.log('recentBlockhash',recentBlockhash)
-            let transaction = new Transaction({recentBlockhash: recentBlockhash.blockhash})
-            .add(
-              slnUtils.transfer({
-                owner: account.publicKey, // from SOL address
-                source: new PublicKey(process.env.SRM_ADDRESS), // from SRM address
-                destination: new PublicKey(srmAddress), // to SRM address
-                amount: result //ok
-              })
-            )
-            console.log(transaction)
-            connection.sendTransaction(transaction, [account]).then(transfer=>{
-              let newTxHash = new ClaimSrm ({
-                tx_hash: job.data.txHash,
-                srm_tx_hash: transfer
-              })
-              newTxHash.save()
-              job.progress(100)
-              done()
-              console.log('transfer',transfer)
-            }).catch(error=>{
-              console.log("error",error)
-              throw new Error(error)
-            })
-          }
-          // if (!mint) {
-          //   console.log('!mint')
-          //   throw new Error('False')
-          // }
-        } catch (e) {
-          throw new Error('Cannot confirm try catch')
-        }
-      } else {
-        throw new Error('Cannot confirm')
-      }
-    }
-  })
 
-  setQueues(queues)
+claimQueues.process(async function(job, done) {
+  console.log(job.data)
+  // let acc = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
+  let fbId = job.data.message.slice(0, job.data.message.indexOf('.'))
+  console.log('fb_id', fbId)
+  let asrmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
+  console.log('asrm', asrmAddress)
+  let user = await User.findOne({fb_id: fbId})
+  console.log(user)
+  if (user.fb_id == fbId) {
+    const wallet = await web3ws.eth.accounts.wallet.add(process.env.ASRM_PRIVATE_KEY);
+    console.log('wallet', wallet)
+    console.log('@@@@@', global.token_contract.methods)
+    const asrmBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
+    console.log('asrmBalance', asrmBalance)
+    // if (parseFloat(pocBalance) - process.env.ASRM_REWARD < 500000000000000000000) {
+    //   // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "Pool's Warning!", "POC pool's balance is below 500")
+    //   // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "Pool's Warning!", "POC Pool's balance is below 500")
+    //   console.log('check balance')
+    // }
+    if (parseFloat(asrmBalance) > process.env.ASRM_REWARD) {
+      try {
+        console.log('try')
+        global.token_contract.methods.transfer(asrmAddress, process.env.ASRM_REWARD)
+        .send({from: wallet.address, gasPrice: '0'}
+        ).then(async function (data) {
+          console.log(data)
+          await User.findOneAndUpdate({fb_id: fbId}, {$set:{wallet_address: asrmAddress, claimed: '1'}})
+          job.progress(100)
+          done()
+        })
+      } catch(ex) {
+        throw new Error('Cannot confirm', ex)
+      }
+    } else {
+      throw new Error('not enough aSRM')
+      // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "POC pool's balance is running out")
+      // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "POC Pool's balance is running out")
+    }
+  } else {
+    throw new Error('Cannot confirm fbid', ex)
+  }
+})
+
+swapQueues.process(async function(job, done) {
+  console.log(job.data)
+  let claimSrm = await ClaimSrm.findOne({tx_hast : job.data.txHash})
+  console.log('txhash',claimSrm)
+  console.log(claimSrm)
+  if (claimSrm != null) {
+    throw new Error('this txHash is already claimed')
+  }
+  let confirm = await web3ws.eth.getTransaction(job.data.txHash)
+  console.log('transaction', confirm)
+  let amount = weiToPOC(await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
+  console.log(amount, await web3ws.utils.hexToNumberString('0x' + confirm.input.slice(74)))
+  let wallet = await web3ws.eth.accounts.recover(job.data.message, job.data.signature).toLowerCase()
+  let srmAddress = job.data.message.slice(job.data.message.indexOf('.') + 1, job.data.message.lastIndexOf('.'))
+  console.log('srmAddress',srmAddress)
+  let result = srmToWei(bigDecimal.multiply(amount, 0.001))
+  console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
+  if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
+    let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
+    console.log('@@@@@')
+    try {
+      const publicKey = new PublicKey(process.env.SRM_ADDRESS)
+      const accountInfo = await connection.getAccountInfo(publicKey)
+      let balance
+      let amount
+      console.log('accountInfo',accountInfo)
+      if (!accountInfo) {
+        throw new Error('No acount info')
+      }
+      console.log('accountInfo.owner', accountInfo.owner)
+      console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
+      if (accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') {
+        const data = slnUtils.parseTokenAccountData(accountInfo.data)
+        if (data.amount < 1500000 && sendEmail == true) {
+          sendEmail = false
+          console.log('cucu')
+          mailer.send('noreply@ezDeFi.com', 'dathoang997@gmail.com', "Bounty Warning!", "SRM pool's balance is below 200$")
+        }
+        if (data.amount > 1500000 && sendEmail == false) {
+          sendEmail == true
+        }
+        // if (data.amount < 400000) {
+        //   console.log('moneyyyyy')
+        //   throw new Error('False')
+        // }
+        let recentBlockhash = await connection.getRecentBlockhash('recent')
+        console.log('recentBlockhash',recentBlockhash)
+        let transaction = new Transaction()
+        .add(
+          slnUtils.transfer({
+            owner: account.publicKey, // from SOL address
+            source: new PublicKey(process.env.SRM_ADDRESS), // from SRM address
+            destination: new PublicKey(srmAddress), // to SRM address
+            amount: result //ok
+          })
+        )
+        console.log(transaction)
+        connection.sendTransaction(transaction, [account]).then(transfer=>{
+          let newTxHash = new ClaimSrm ({
+            tx_hash: job.data.txHash,
+            srm_tx_hash: transfer
+          })
+          newTxHash.save()
+          job.progress(100)
+          done()
+          console.log('transfer',transfer)
+        }).catch(error=>{
+          console.log("error",error)
+          throw new Error('transaction false', error)
+        })
+      }
+      // if (!mint) {
+      //   console.log('!mint')
+      //   throw new Error('False')
+      // }
+    } catch (e) {
+      throw new Error('Cannot confirm try catch')
+    }
+  } else {
+    throw new Error('Cannot confirm')
+  }
+})
+
+setQueues([swapQueues, claimQueues])
 
 exports.claimASRM = [
   body("message", "message can not be empty.").not().isEmpty().trim(),
@@ -166,7 +167,7 @@ exports.claimASRM = [
     }
     console.log(req.body)
     const run = () => {
-      queues.add({
+      claimQueues.add({
         type: 0,
         signature: req.body.signature,
         message: req.body.message,
@@ -189,8 +190,7 @@ exports.swapSRM = [
     }
 
     const run = () => {
-      queues.add({
-        type: 1,
+      swapQueues.add({
         message: req.body.message,
         signature: req.body.signature,
         txHash: req.body.txHash,

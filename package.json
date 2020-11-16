@@ -8,7 +8,7 @@
     "lint": "eslint --fix --config .eslintrc.json \"**/*.js\""
   },
   "dependencies": {
-    "@solana/web3.js": "^0.78.2",
+    "@solana/web3.js": "^0.71.9",
     "aws-sdk": "^2.683.0",
     "axios": "^0.19.2",
     "bcrypt": "^3.0.6",
