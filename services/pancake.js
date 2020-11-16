@@ -85,7 +85,7 @@ async function checkConversation(conversationId, customerId) {
   let isValid = (message_tags.length >= NUMBER_OF_TAGS) ? true : false;
   let claimed = false;
   let user = await User.findOne({fb_id: content.customers[0].fb_id});
-  if(user != null & user.claimed == '1') {
+  if(user != null && user.claimed == '1') {
     claimed = true;
   }
   FbUser.findOne({fb_id: content.customers[0].fb_id}, function(error, result) {
