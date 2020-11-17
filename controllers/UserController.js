@@ -60,32 +60,28 @@ claimQueues.process(async function(job, done) {
           done()
         })
       } catch(ex) {
-        throw new Error('Cannot confirm', ex)
+        done(new Error('error'))
       }
     } else {
-      throw new Error('not enough aSRM')
+      done(new Error('error'))
       // mailer.send('noreply@pocvietnam.com', 'im@loc.com.vn', "POC pool's balance is running out")
       // mailer.send('noreply@pocvietnam.com', 'daohoangthanh@gmail.com', "POC Pool's balance is running out")
     }
   } else {
-    throw new Error('Cannot confirm fbid', ex)
+    done(new Error('error'))
   }
 })
 
 swapQueues.process(async function(job, done) {
   done()
   console.log(job.data)
-  let claimSrm = await ClaimSrm.findOne({tx_hast : job.data.txHash})
+  let claimSrm = await ClaimSrm.findOne({tx_hash : job.data.txHash})
+  console.log('@@@@@@@', claimSrm)
   if (claimSrm != null) {
-    if (claimSrm.status == true) {
-      throw new Error('this txHash is already claimed')
+    console.log('aloaloaloaloaloaloaloaloalo')
+    if (claimSrm.status == false) {
+      done(new Error('error'))
     }
-
-    let newTxHash = new ClaimSrm ({
-      tx_hash: job.data.txHash,
-      status: false
-    })
-    newTxHash.save()
     console.log('txhash',claimSrm)
     console.log(claimSrm)
     let confirm = await web3ws.eth.getTransaction(job.data.txHash)
@@ -107,7 +103,7 @@ swapQueues.process(async function(job, done) {
         let amount
         console.log('accountInfo',accountInfo)
         if (!accountInfo) {
-          throw new Error('No acount info')
+          done(new Error('error'))
         }
         console.log('accountInfo.owner', accountInfo.owner)
         console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
@@ -138,14 +134,13 @@ swapQueues.process(async function(job, done) {
           )
           console.log(transaction)
           connection.sendTransaction(transaction, [account]).then(async function (transfer) {
-            newTxHash.save()
             ClaimSrm.findOneAndUpdate({tx_hash: job.data.txHash},{$set:{tx_hash_srm: transfer, status: false}})
             job.progress(100)
             done()
             console.log('transfer',transfer)
           }).catch(error=>{
             console.log("error",error)
-            throw new Error('transaction false', error)
+            done(new Error('error'))
           })
         }
         // if (!mint) {
@@ -153,12 +148,13 @@ swapQueues.process(async function(job, done) {
         //   throw new Error('False')
         // }
       } catch (e) {
-        throw new Error('Cannot confirm try catch')
+        done(new Error('error'))
       }
     } else {
-      throw new Error('Cannot confirm')
+      done(new Error('error'))
     }
   } else {
+    console.log('ggggggggggggggggggggggggggggg')
     let newTxHash = new ClaimSrm ({
       tx_hash: job.data.txHash,
       status: true
@@ -185,7 +181,7 @@ swapQueues.process(async function(job, done) {
         let amount
         console.log('accountInfo',accountInfo)
         if (!accountInfo) {
-          throw new Error('No acount info')
+          done(new Error('error'))
         }
         console.log('accountInfo.owner', accountInfo.owner)
         console.log('accountInfo.owner.toBase58()',accountInfo.owner.toBase58() == 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
@@ -225,7 +221,7 @@ swapQueues.process(async function(job, done) {
             done()
           }).catch(error=>{
             console.log("error",error)
-            throw new Error('transaction false', error)
+            done(new Error('error'))
           })
         }
         // if (!mint) {
@@ -233,12 +229,36 @@ swapQueues.process(async function(job, done) {
         //   throw new Error('False')
         // }
       } catch (e) {
-        throw new Error('Cannot confirm try catch')
+        done(new Error('error'))
       }
     } else {
-      throw new Error('Cannot confirm')
+      done(new Error('error'))
     }
   }
+})
+
+swapQueues.on('failed', function(job, result){
+  const run = () => {
+    swapQueues.add(
+      job.data,
+      {
+        lifo: true
+      }
+    );
+  }
+  setTimeout(run, 10000)
+})
+
+claimQueues.on('failed', function(job, result){
+  const run = () => {
+    claimQueues.add(
+      job.data,
+      {
+        lifo: true
+      }
+    );
+  }
+  setTimeout(run, 10000)
 })
 
 setQueues([swapQueues, claimQueues])
@@ -254,10 +274,11 @@ exports.claimASRM = [
     console.log(req.body)
     const run = () => {
       claimQueues.add({
-        type: 0,
         signature: req.body.signature,
         message: req.body.message,
-      }, {lifo: true} );
+      }, {
+        lifo: true
+      });
       return apiResponse.successResponseWithData(res, "claim", req.body.amount)
     }
     setTimeout(run, 1000)
@@ -280,7 +301,9 @@ exports.swapSRM = [
         message: req.body.message,
         signature: req.body.signature,
         txHash: req.body.txHash,
-      }, {lifo: true} );
+      }, {
+        lifo: true
+      });
       return apiResponse.successResponseWithData(res, "swap success", req.body.amount)
     }
     setTimeout(run, 1000)
