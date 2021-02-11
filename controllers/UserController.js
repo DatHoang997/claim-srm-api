@@ -40,7 +40,6 @@ claimQueues.process(async function(job, done) {
   if (user.fb_id == fbId) {
     const wallet = await web3ws.eth.accounts.wallet.add(process.env.ASRM_PRIVATE_KEY);
     console.log('wallet', wallet)
-    console.log('@@@@@', global.token_contract.methods)
     const asrmBalance = await global.token_contract.methods.balanceOf(wallet.address).call({from: wallet.address, gasPrice: '0'})
     console.log('asrmBalance', asrmBalance)
     // if (parseFloat(pocBalance) - process.env.ASRM_REWARD < 500000000000000000000) {
@@ -76,7 +75,6 @@ swapQueues.process(async function(job, done) {
   done()
   console.log(job.data)
   let claimSrm = await ClaimSrm.findOne({tx_hash : job.data.txHash})
-  console.log('@@@@@@@', claimSrm)
   if (claimSrm != null) {
     console.log('aloaloaloaloaloaloaloaloalo')
     if (claimSrm.status == false) {
@@ -95,7 +93,6 @@ swapQueues.process(async function(job, done) {
     console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
     if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
       let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
-      console.log('@@@@@')
       try {
         const publicKey = new PublicKey(process.env.SRM_ADDRESS)
         const accountInfo = await connection.getAccountInfo(publicKey)
@@ -173,7 +170,6 @@ swapQueues.process(async function(job, done) {
     console.log('result', result, confirm.to == process.env.ASRM_CONTRACT_ADDRESS, confirm.from.toLowerCase() == wallet)
     if (confirm.to == process.env.ASRM_CONTRACT_ADDRESS && confirm.from.toLowerCase() == wallet) {
       let { address, publicKey, account, privateKey } = await Utils.getSolanaAccountAtIndex(process.env.SRM_MNEMONIC)
-      console.log('@@@@@')
       try {
         const publicKey = new PublicKey(process.env.SRM_ADDRESS)
         const accountInfo = await connection.getAccountInfo(publicKey)
@@ -214,7 +210,6 @@ swapQueues.process(async function(job, done) {
           connection.sendTransaction(transaction, [account]).then(async function (transfer) {
             console.log('transfer',transfer)
             if (transfer) {
-              console.log('@@@@@@@',transfer)
               await ClaimSrm.findOneAndUpdate({tx_hash: job.data.txHash},{$set:{tx_hash_srm: transfer, status: false}})
             }
             job.progress(100)
